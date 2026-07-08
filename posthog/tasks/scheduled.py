@@ -102,6 +102,7 @@ from products.streamlit_apps.backend.facade.api import (
     prune_old_streamlit_app_versions,
     stop_idle_streamlit_sandboxes,
 )
+from products.tasks.backend.loop_retention import sweep_loop_task_retention_task
 from products.web_analytics.backend.achievements.tasks import sweep_web_analytics_achievement_team_tracks
 from products.web_analytics.backend.tasks.heatmap_screenshot import report_stuck_heatmap_screenshots
 
@@ -266,6 +267,14 @@ def setup_periodic_tasks(sender: Celery, **kwargs: Any) -> None:
         crontab(hour="*", minute="25"),
         sync_pending_signals_refund_credits.s(),
         name="sync pending signals refund credits",
+    )
+
+    # Loop task retention sweep - daily at 4:30 AM
+    add_periodic_task_with_expiry(
+        sender,
+        crontab(hour="4", minute="30"),
+        sweep_loop_task_retention_task.s(),
+        name="sweep loop task retention",
     )
 
     # Flags cache sync - hourly

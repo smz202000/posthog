@@ -5778,6 +5778,96 @@
             "readOnlyHint": true
         }
     },
+    "loops-create": {
+        "description": "Create a new loop: a named, cloud-executed agent automation that runs on a schedule, a GitHub event, or an authenticated API call. Set `instructions` (the prompt delivered to the agent on every run), `runtime_adapter`/`model`/`reasoning_effort`, `repositories` (up to 5, may be empty for a connector-only loop), `visibility` (`personal` or `team`), `behaviors` (PR creation, CI watch, auto-fix) and `triggers`.",
+        "category": "Tasks",
+        "feature": "tasks",
+        "summary": "Create loop",
+        "title": "Create loop",
+        "required_scopes": ["loop:write"],
+        "annotations": {
+            "destructiveHint": false,
+            "idempotentHint": false,
+            "openWorldHint": true,
+            "readOnlyHint": false
+        },
+        "feature_flag": "tasks"
+    },
+    "loops-destroy": {
+        "description": "Soft-delete a loop and pause every trigger's schedule so it stops firing. Only the loop owner or a project admin can delete a loop.",
+        "category": "Tasks",
+        "feature": "tasks",
+        "summary": "Delete loop",
+        "title": "Delete loop",
+        "required_scopes": ["loop:write"],
+        "annotations": {
+            "destructiveHint": true,
+            "idempotentHint": true,
+            "openWorldHint": true,
+            "readOnlyHint": false
+        },
+        "feature_flag": "tasks"
+    },
+    "loops-list": {
+        "description": "List loops visible to the current user in the project: personal loops the user owns plus every team-visible loop. Returns loop config, trigger summaries, and run bookkeeping (`last_run_at`, `last_run_status`, `consecutive_failures`).",
+        "category": "Tasks",
+        "feature": "tasks",
+        "summary": "List loops",
+        "title": "List loops",
+        "required_scopes": ["loop:read"],
+        "annotations": {
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": true,
+            "readOnlyHint": true
+        },
+        "feature_flag": "tasks"
+    },
+    "loops-partial-update": {
+        "description": "Update an existing loop's config. On a team loop, identity-bearing fields (`instructions`, `repositories`, `connectors`, `behaviors`, `triggers`) are editable only by the current owner: editing them as another member takes ownership and re-validates repositories and connectors against that member's own access. Editing a loop never affects its in-flight or queued runs; every run snapshots its config at fire time.",
+        "category": "Tasks",
+        "feature": "tasks",
+        "summary": "Update loop",
+        "title": "Update loop",
+        "required_scopes": ["loop:write"],
+        "annotations": {
+            "destructiveHint": false,
+            "idempotentHint": false,
+            "openWorldHint": true,
+            "readOnlyHint": false
+        },
+        "feature_flag": "tasks"
+    },
+    "loops-retrieve": {
+        "description": "Get a specific loop by ID, including its full config (instructions, model, repositories, triggers, behaviors, connectors, notifications) and run bookkeeping.",
+        "category": "Tasks",
+        "feature": "tasks",
+        "summary": "Get loop",
+        "title": "Get loop",
+        "required_scopes": ["loop:read"],
+        "annotations": {
+            "destructiveHint": false,
+            "idempotentHint": true,
+            "openWorldHint": true,
+            "readOnlyHint": true
+        },
+        "feature_flag": "tasks"
+    },
+    "loops-run-create": {
+        "description": "Manually fire a loop right now, outside its configured triggers. Creates a fresh task run using the loop's current config snapshot and returns it. Subject to the same usage-gate, overlap policy and rate limits as trigger-fired runs.",
+        "category": "Tasks",
+        "feature": "tasks",
+        "summary": "Manually run a loop",
+        "title": "Manually run a loop",
+        "required_scopes": ["loop:write"],
+        "annotations": {
+            "destructiveHint": false,
+            "idempotentHint": false,
+            "openWorldHint": true,
+            "readOnlyHint": false
+        },
+        "feature_flag": "tasks"
+    },
     "marketing-analytics-conversion-goals": {
         "description": "List the configured marketing conversion goals for the current project. Each goal returns its kind (EventsNode / ActionsNode / DataWarehouseNode), target, last-30d count, and the integrated vs non-integrated split. Non-integrated breaks into two buckets with OPPOSITE fixes: events_without_utm_source (tag UTMs) vs events_with_unmatched_utm_source (add a custom source mapping). is_approximate is true when the 30d count may differ from the dashboard's attribution-windowed number.",
         "category": "Marketing analytics",

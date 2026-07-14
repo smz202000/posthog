@@ -29,13 +29,14 @@ from products.tasks.backend.temporal.oauth import create_oauth_access_token_for_
 from products.tasks.backend.temporal.process_task.utils import (
     get_actor_distinct_id,
     get_imported_mcp_server_configs,
+    get_sandbox_mcp_session_user,
     get_sandbox_ph_mcp_configs,
     get_task_run_credential_user,
     get_user_mcp_server_configs,
     is_slack_interaction_state,
-    mark_mcp_token_issued,
+    mark_sandbox_mcp_session,
     record_message_actor,
-    should_refresh_mcp_token,
+    sandbox_identity_scope,
 )
 
 from ee.hogai.sandbox import STOP_REASON_END_TURN, TURN_COMPLETE_METHOD
@@ -261,17 +262,28 @@ def _refresh_sandbox_mcp(
     the sandbox.
 
     Best-effort: retries once on failure, then logs and returns — a failed
-    refresh must not block an otherwise-valid follow-up. Skipped when a token
-    was already issued for this run within MCP_TOKEN_REFRESH_INTERVAL_SECONDS.
+    refresh must not block an otherwise-valid follow-up. Skipped when the
+    session already holds a fresh token for this message's actor (see
+    mark_sandbox_mcp_session).
     """
     run_id = str(task_run.id)
-    if not should_refresh_mcp_token(run_id):
-        logger.info("refresh_mcp_skipped_within_interval", run_id=run_id)
-        return
     if actor_user is None:
         # Without a credential user the mint is guaranteed to fail; skip
         # quietly rather than warn on every message.
         return
+
+    scope = sandbox_identity_scope(run_id, state)
+    bound_user_id = get_sandbox_mcp_session_user(scope)
+    if bound_user_id == actor_user.id:
+        logger.info("refresh_mcp_skipped_within_interval", run_id=run_id, user_id=actor_user.id)
+        return
+    if bound_user_id is not None:
+        logger.info(
+            "refresh_mcp_identity_transition",
+            run_id=run_id,
+            previous_user_id=bound_user_id,
+            user_id=actor_user.id,
+        )
 
     try:
         access_token = create_oauth_access_token_for_run(task_run.task, state, scopes=scopes)
@@ -301,10 +313,16 @@ def _refresh_sandbox_mcp(
     if imported_mcp_configs:
         mcp_configs = mcp_configs + imported_mcp_configs
 
-    if not mcp_configs:
+    if not mcp_configs and bound_user_id is None:
+        # First bind for this sandbox and the actor has no MCP configs: there is
+        # no prior session to tear down, so just record the binding.
+        mark_sandbox_mcp_session(scope, actor_user.id)
         logger.info("refresh_mcp_skipped_no_configs", run_id=run_id)
         return
 
+    # An actor transition where the new actor resolves no configs still has to
+    # clear the previous actor's live session — an empty server list replaces it
+    # wholesale. Binding stays gated on a successful send below.
     mcp_servers = [config.to_dict() for config in mcp_configs]
 
     result = send_refresh_session(
@@ -314,7 +332,7 @@ def _refresh_sandbox_mcp(
         timeout=REFRESH_TIMEOUT_SECONDS,
     )
     if result.success:
-        mark_mcp_token_issued(run_id)
+        mark_sandbox_mcp_session(scope, actor_user.id)
         logger.info("refresh_mcp_delivered", run_id=run_id, attempts=1)
         return
 
@@ -332,7 +350,7 @@ def _refresh_sandbox_mcp(
         timeout=REFRESH_TIMEOUT_SECONDS,
     )
     if retry.success:
-        mark_mcp_token_issued(run_id)
+        mark_sandbox_mcp_session(scope, actor_user.id)
         logger.info("refresh_mcp_delivered", run_id=run_id, attempts=2)
         return
 

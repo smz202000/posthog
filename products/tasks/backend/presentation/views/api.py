@@ -39,7 +39,7 @@ from products.tasks.backend.facade import (
     cancellation as tasks_cancellation,
     contracts as tasks_contracts,
 )
-from products.tasks.backend.facade.access import cloud_usage_limit_response, code_access_required_response
+from products.tasks.backend.facade.access import cloud_usage_limit_response
 from products.tasks.backend.facade.metrics import (
     StreamConnectionOutcome,
     observe_stream_connection_closed,
@@ -632,9 +632,6 @@ class TaskViewSet(TeamAndOrgViewSetMixin, viewsets.GenericViewSet):
         if not self._warm_enabled():
             return Response(status=status.HTTP_200_OK)
 
-        if access_response := code_access_required_response(request.user):
-            return access_response
-
         user_id = self._user_id()
         if user_id is None:
             return Response(status=status.HTTP_200_OK)
@@ -751,8 +748,6 @@ class TaskAutomationViewSet(TeamAndOrgViewSetMixin, viewsets.GenericViewSet):
 
     @extend_schema(request=TaskAutomationWriteSerializer, responses={201: TaskAutomationSerializer})
     def create(self, request, **kwargs):
-        if access_response := code_access_required_response(request.user):
-            return access_response
         serializer = self._write_serializer(request.data)
         automation = tasks_facade.create_task_automation(
             self.team_id, getattr(request.user, "id", None), **self._facade_kwargs(serializer.validated_data)
@@ -762,9 +757,6 @@ class TaskAutomationViewSet(TeamAndOrgViewSetMixin, viewsets.GenericViewSet):
     @extend_schema(request=TaskAutomationWriteSerializer, responses={200: TaskAutomationSerializer})
     def partial_update(self, request, pk=None, **kwargs):
         serializer = self._write_serializer(request.data, partial=True)
-        if serializer.validated_data.get("enabled") is True:
-            if access_response := code_access_required_response(request.user):
-                return access_response
         automation = tasks_facade.update_task_automation(
             pk, self.team_id, getattr(request.user, "id", None), **self._facade_kwargs(serializer.validated_data)
         )
@@ -781,8 +773,6 @@ class TaskAutomationViewSet(TeamAndOrgViewSetMixin, viewsets.GenericViewSet):
     @extend_schema(request=None, responses={200: TaskAutomationSerializer})
     @action(detail=True, methods=["post"], url_path="run", required_scopes=["task:write"])
     def run(self, request, pk=None, **kwargs):
-        if access_response := code_access_required_response(request.user):
-            return access_response
         automation = tasks_facade.run_task_automation_now(pk, self.team_id, getattr(request.user, "id", None))
         if automation is None:
             raise NotFound()
@@ -1492,8 +1482,6 @@ class TaskRunViewSet(TeamAndOrgViewSetMixin, viewsets.GenericViewSet):
         params = request.validated_data.get("params")
 
         if method == "user_message":
-            if access_response := code_access_required_response(request.user):
-                return access_response
             command_params = dict(params or {})
             artifact_ids = command_params.pop("artifact_ids", [])
             if artifact_ids:
@@ -1512,7 +1500,12 @@ class TaskRunViewSet(TeamAndOrgViewSetMixin, viewsets.GenericViewSet):
                     )
 
             signal_result = tasks_facade.signal_task_run_user_message(
-                pk, task_id, self.team_id, content=command_params.get("content"), artifact_ids=artifact_ids
+                pk,
+                task_id,
+                self.team_id,
+                content=command_params.get("content"),
+                artifact_ids=artifact_ids,
+                actor_user_id=request.user.id,
             )
             if signal_result is None:
                 raise NotFound()

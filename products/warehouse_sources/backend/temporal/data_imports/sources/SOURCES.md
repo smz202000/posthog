@@ -391,6 +391,7 @@ the row lists both.
 | snapchat_ads              | HTTP                        | requests + `rest_source.RESTClient`                             | ✅                          |
 | snowflake                 | DB protocol                 | snowflake-connector-python                                      | ➖                          |
 | solarwinds_service_desk   | HTTP                        | requests                                                        | ✅                          |
+| sonatype_nexus            | HTTP                        | requests                                                        | ✅                          |
 | sparkpost                 | HTTP                        | requests                                                        | ✅                          |
 | split_io                  | HTTP                        | requests                                                        | ✅                          |
 | square                    | HTTP                        | requests                                                        | ✅                          |
@@ -879,7 +880,6 @@ doesn't conflict with concurrent PRs.
 - solarwinds_service_desk
 - sonar_cloud
 - sonarqube
-- sonatype_nexus
 - sourcegraph
 - spacelift
 - splunk_observability_cloud

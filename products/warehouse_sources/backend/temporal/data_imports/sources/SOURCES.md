@@ -190,6 +190,7 @@ the row lists both.
 | gainsight_px              | HTTP                        | requests                                                        | ✅                          |
 | gitbook                   | HTTP                        | requests                                                        | ✅                          |
 | github                    | HTTP + Webhook              | requests + `WebhookSourceManager`                               | ✅ (pull) / ➖ (webhook)    |
+| gitguardian               | HTTP                        | requests                                                        | ✅                          |
 | giphy                     | HTTP                        | requests                                                        | ✅                          |
 | gitlab                    | HTTP                        | requests                                                        | ✅                          |
 | gladly                    | HTTP                        | requests                                                        | ✅                          |
@@ -625,7 +626,6 @@ doesn't conflict with concurrent PRs.
 - gerrit
 - getstream
 - gitea
-- gitguardian
 - glassfrog
 - gmail
 - gnews

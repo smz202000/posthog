@@ -119,6 +119,7 @@ the row lists both.
 | confluence                | HTTP                        | requests                                                        | ✅                          |
 | chartmogul                | HTTP                        | requests                                                        | ✅                          |
 | circleci                  | HTTP                        | requests                                                        | ✅                          |
+| circleci_insights         | HTTP                        | requests                                                        | ✅                          |
 | cimis                     | HTTP                        | requests                                                        | ✅                          |
 | cloudflare                | HTTP                        | requests                                                        | ✅                          |
 | clari                     | HTTP                        | requests                                                        | ✅                          |
@@ -546,7 +547,6 @@ doesn't conflict with concurrent PRs.
 - chift
 - chorus
 - cin7
-- circleci_insights
 - cisco_duo
 - cisco_meraki
 - clarifai

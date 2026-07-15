@@ -102,7 +102,7 @@ from products.streamlit_apps.backend.facade.api import (
     prune_old_streamlit_app_versions,
     stop_idle_streamlit_sandboxes,
 )
-from products.tasks.backend.facade.tasks import sweep_loop_task_retention_task
+from products.tasks.backend.facade.tasks import reconcile_loop_trigger_schedules_task, sweep_loop_task_retention_task
 from products.web_analytics.backend.achievements.tasks import sweep_web_analytics_achievement_team_tracks
 from products.web_analytics.backend.tasks.heatmap_screenshot import report_stuck_heatmap_screenshots
 
@@ -275,6 +275,15 @@ def setup_periodic_tasks(sender: Celery, **kwargs: Any) -> None:
         crontab(hour="4", minute="30"),
         sweep_loop_task_retention_task.s(),
         name="sweep loop task retention",
+    )
+
+    # Loop trigger schedule reconciliation - every 10 minutes, re-syncs schedules
+    # stranded pending/failed by a transient Temporal outage during create/edit.
+    add_periodic_task_with_expiry(
+        sender,
+        crontab(minute="*/10"),
+        reconcile_loop_trigger_schedules_task.s(),
+        name="reconcile loop trigger schedules",
     )
 
     # Flags cache sync - hourly

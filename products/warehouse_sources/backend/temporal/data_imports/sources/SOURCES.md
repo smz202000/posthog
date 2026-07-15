@@ -294,6 +294,7 @@ the row lists both.
 | nocrm                     | HTTP                        | requests                                                        | ✅                          |
 | northpass_lms             | HTTP                        | requests                                                        | ✅                          |
 | notion                    | HTTP                        | requests                                                        | ✅                          |
+| nuget                     | HTTP                        | requests                                                        | ✅                          |
 | omnisend                  | HTTP                        | requests                                                        | ✅                          |
 | oncehub                   | HTTP                        | requests                                                        | ✅                          |
 | onepagecrm                | HTTP                        | requests                                                        | ✅                          |
@@ -749,7 +750,6 @@ doesn't conflict with concurrent PRs.
 - nocrm
 - northflank
 - northpass_lms
-- nuget
 - nutshell
 - nylas
 - octolens

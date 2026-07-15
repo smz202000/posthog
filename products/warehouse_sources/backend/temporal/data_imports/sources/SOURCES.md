@@ -171,6 +171,7 @@ the row lists both.
 | ezofficeinventory         | HTTP                        | requests                                                        | ✅                          |
 | factorial                 | HTTP                        | requests + `rest_source.RESTClient`                             | ✅                          |
 | fastly                    | HTTP                        | requests                                                        | ✅                          |
+| featurebase               | HTTP + Webhook              | requests + `WebhookSourceManager`                               | ✅ (pull) / ➖ (webhook)    |
 | fillout                   | HTTP                        | requests + `rest_source.RESTClient`                             | ✅                          |
 | finage                    | HTTP                        | requests                                                        | ✅                          |
 | financial_modelling       | HTTP                        | requests                                                        | ✅                          |
@@ -603,7 +604,6 @@ doesn't conflict with concurrent PRs.
 - facebook_pages
 - fastbill
 - fauna
-- featurebase
 - feishu
 - fintoc
 - firebase

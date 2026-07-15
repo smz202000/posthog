@@ -1357,7 +1357,8 @@ class EnchargeSourceConfig(config.Config):
 
 @config.config
 class Env0SourceConfig(config.Config):
-    pass
+    api_key_id: str
+    api_key_secret: str
 
 
 @config.config

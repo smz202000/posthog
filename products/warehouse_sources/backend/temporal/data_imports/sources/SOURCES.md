@@ -232,6 +232,7 @@ the row lists both.
 | invoiceninja              | HTTP                        | requests                                                        | ✅                          |
 | ip2whois                  | HTTP                        | requests                                                        | ✅                          |
 | iterable                  | HTTP                        | requests                                                        | ✅                          |
+| jfrog_artifactory         | HTTP                        | requests                                                        | ✅                          |
 | jira                      | HTTP                        | requests                                                        | ✅                          |
 | jobnimbus                 | HTTP                        | requests                                                        | ✅                          |
 | jotform                   | HTTP                        | requests                                                        | ✅                          |
@@ -679,7 +680,6 @@ doesn't conflict with concurrent PRs.
 - jamf_pro
 - jellyfish
 - jenkins
-- jfrog_artifactory
 - jobber
 - judgeme_reviews
 - jumpcloud

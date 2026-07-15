@@ -4370,7 +4370,7 @@ class UptickSourceConfig(config.Config):
 
 @config.config
 class UptimerobotSourceConfig(config.Config):
-    pass
+    api_key: str
 
 
 @config.config

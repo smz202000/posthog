@@ -537,7 +537,7 @@ class BitlySourceConfig(config.Config):
 
 @config.config
 class BitriseSourceConfig(config.Config):
-    pass
+    api_token: str
 
 
 @config.config

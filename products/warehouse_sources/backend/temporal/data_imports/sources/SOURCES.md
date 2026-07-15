@@ -424,6 +424,7 @@ the row lists both.
 | ubidots                   | HTTP                        | requests                                                        | ✅                          |
 | unleash                   | HTTP                        | requests                                                        | ✅                          |
 | upstash                   | HTTP                        | requests                                                        | ✅                          |
+| usersnap                  | HTTP                        | requests + PyJWT                                                | ✅                          |
 | vantage                   | HTTP                        | requests                                                        | ✅                          |
 | vapi                      | HTTP                        | requests                                                        | ✅                          |
 | vellum                    | HTTP                        | requests                                                        | ✅                          |
@@ -936,7 +937,6 @@ doesn't conflict with concurrent PRs.
 - uptick
 - uptimerobot
 - us_census
-- usersnap
 - uservoice
 - veeqo
 - veracode

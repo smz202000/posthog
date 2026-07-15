@@ -14,6 +14,7 @@ from products.feature_flags.backend.facade.api import (
     flag_disable_requires_approval,
     ship_variant,
 )
+from products.feature_flags.backend.facade.filters import replace_variant_distribution
 from products.feature_flags.backend.facade.rules import ExperimentRuleConfig, HoldoutRef, experiment_rule_from_filters
 from products.feature_flags.backend.models.feature_flag import FeatureFlag
 
@@ -219,6 +220,54 @@ class TestRollOutVariant:
         assert result["groups"][1:] == [{"properties": [], "rollout_percentage": 100}]
         assert result["payloads"] == current_filters["payloads"]
         assert result["aggregation_group_type_index"] == 1
+
+
+class TestReplaceVariantDistribution:
+    def test_rebuilds_variants_preserving_everything_else(self):
+        current_filters = {
+            "groups": [
+                {
+                    "properties": [
+                        {"key": "email", "type": "person", "value": "@posthog.com", "operator": "icontains"}
+                    ],
+                    "rollout_percentage": 50,
+                    "variant": "test",
+                }
+            ],
+            "payloads": {"test": '{"color": "blue"}'},
+            "multivariate": {
+                "variants": [
+                    {"key": "control", "rollout_percentage": 50},
+                    {"key": "test", "rollout_percentage": 50},
+                ]
+            },
+            "aggregation_group_type_index": None,
+            "holdout": None,
+        }
+        new_variants = [
+            {"key": "control", "rollout_percentage": 30},
+            {"key": "test", "rollout_percentage": 70},
+        ]
+
+        result = replace_variant_distribution(current_filters, new_variants)
+
+        assert result["multivariate"] == {"variants": new_variants}
+        assert {k: v for k, v in result.items() if k != "multivariate"} == {
+            k: v for k, v in current_filters.items() if k != "multivariate"
+        }
+
+    def test_does_not_alias_input(self):
+        current_filters = {
+            "groups": [{"properties": [], "rollout_percentage": 100}],
+            "multivariate": {"variants": [{"key": "control", "rollout_percentage": 100}]},
+        }
+        new_variants = [{"key": "control", "rollout_percentage": 100}]
+
+        result = replace_variant_distribution(current_filters, new_variants)
+        result["multivariate"]["variants"][0]["rollout_percentage"] = 0
+
+        assert new_variants == [{"key": "control", "rollout_percentage": 100}]
+        assert current_filters["multivariate"]["variants"][0]["rollout_percentage"] == 100
 
 
 class TestExperimentRuleFromFilters:

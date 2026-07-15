@@ -236,6 +236,7 @@ the row lists both.
 | jobnimbus                 | HTTP                        | requests                                                        | ✅                          |
 | jotform                   | HTTP                        | requests                                                        | ✅                          |
 | judgeme_reviews           | HTTP                        | requests                                                        | ✅                          |
+| jumpcloud                 | HTTP                        | requests                                                        | ✅                          |
 | justcall                  | HTTP                        | requests                                                        | ✅                          |
 | justsift                  | HTTP                        | requests                                                        | ✅                          |
 | k6_cloud                  | HTTP                        | requests                                                        | ✅                          |
@@ -682,7 +683,6 @@ doesn't conflict with concurrent PRs.
 - jfrog_artifactory
 - jobber
 - judgeme_reviews
-- jumpcloud
 - justsift
 - kafka
 - kandji

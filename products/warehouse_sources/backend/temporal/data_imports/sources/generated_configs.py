@@ -2812,7 +2812,8 @@ class OctolensSourceConfig(config.Config):
 
 @config.config
 class OctopusDeploySourceConfig(config.Config):
-    pass
+    host: str
+    api_key: str
 
 
 @config.config

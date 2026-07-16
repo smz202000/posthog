@@ -60,3 +60,5 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Braintree: version is just the required `Braintree-Version` header and response shapes are compatible, so the whole change is threading `resolve_api_version(inputs.api_version)` from `source_for_pipeline` → `braintree_source` → `get_rows` → `_get_session` header — no per-version modules. `validate_credentials` (ping query, version-agnostic) takes the version too; pass `self.resolve_api_version(None)` (the default) since it runs at creation with no pin.
+- Threading a new `api_version` param through helpers that tests call positionally means updating every call site — insert it right after `endpoint` for readability and parameterize the header-assertion test over all supported versions so both old and new are exercised.

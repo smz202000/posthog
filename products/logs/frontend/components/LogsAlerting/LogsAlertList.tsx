@@ -1,15 +1,7 @@
 import { useActions, useValues } from 'kea'
 
 import { IconBell } from '@posthog/icons'
-import {
-    LemonButton,
-    LemonDialog,
-    LemonSwitch,
-    LemonTable,
-    LemonTableColumns,
-    LemonTag,
-    SpinnerOverlay,
-} from '@posthog/lemon-ui'
+import { LemonButton, LemonDialog, LemonSwitch, LemonTag, SpinnerOverlay } from '@posthog/lemon-ui'
 
 import { TZLabel } from 'lib/components/TZLabel'
 import { More } from 'lib/lemon-ui/LemonButton/More'
@@ -21,6 +13,7 @@ import IconMicrosoftTeams from 'public/services/microsoft-teams.png'
 import IconSlack from 'public/services/slack.png'
 import IconWebhook from 'public/services/webhook.svg'
 
+import { AlertsTable, AlertsTableColumn } from 'products/alerts/frontend/components/AlertsTable'
 import {
     NotificationDestinationTypeEnumApi,
     LogsAlertConfigurationApi,
@@ -74,16 +67,8 @@ export function LogsAlertList(): JSX.Element {
         createAlertAndOpen,
     } = useActions(logsAlertingLogic)
 
-    const columns: LemonTableColumns<LogsAlertConfigurationApi> = [
-        {
-            title: 'Name',
-            dataIndex: 'name',
-            render: (_, alert) => (
-                <LemonButton type="tertiary" size="small" to={urls.logsAlertDetail(alert.id)}>
-                    {alert.name}
-                </LemonButton>
-            ),
-        },
+    const columns: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
+        'name',
         {
             title: 'Status',
             dataIndex: 'state',
@@ -101,16 +86,7 @@ export function LogsAlertList(): JSX.Element {
             title: 'Threshold',
             render: (_, alert) => <span className="text-muted text-xs">{formatThreshold(alert)}</span>,
         },
-        {
-            title: 'Last checked',
-            dataIndex: 'last_checked_at',
-            render: (_, alert) =>
-                alert.last_checked_at ? (
-                    <TZLabel time={alert.last_checked_at} />
-                ) : (
-                    <span className="text-muted text-xs">Never</span>
-                ),
-        },
+        'lastChecked',
         {
             title: (
                 <Tooltip title="When this alert is next scheduled to be evaluated. Alerts of the same cadence are spread across the cadence period to smooth load on the database.">
@@ -174,15 +150,7 @@ export function LogsAlertList(): JSX.Element {
                 )
             },
         },
-        {
-            title: 'Created by',
-            dataIndex: 'created_by',
-            render: (_, alert) => (
-                <span className="text-muted text-xs">
-                    {alert.created_by?.first_name || alert.created_by?.email || '—'}
-                </span>
-            ),
-        },
+        'createdBy',
         {
             title: 'Enabled',
             dataIndex: 'enabled',
@@ -284,15 +252,14 @@ export function LogsAlertList(): JSX.Element {
                     New alert
                 </LemonButton>
             </div>
-            <LemonTable
+            <AlertsTable
+                alerts={alerts}
                 columns={columns}
-                dataSource={alerts}
-                rowKey="id"
+                getAlertUrl={(alert) => urls.logsAlertDetail(alert.id)}
                 loading={alertsLoading}
                 emptyState="No alerts configured yet."
                 size="small"
                 pagination={{ pageSize: 30 }}
-                nouns={['alert', 'alerts']}
             />
         </div>
     )

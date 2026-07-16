@@ -194,5 +194,33 @@ describe('EmailSuppressionService', () => {
 
             expect(await svc.isSuppressed(team.id, email)).toBe(false)
         })
+
+        describe('with enforcement enabled', () => {
+            beforeEach(() => {
+                process.env.EMAIL_SUPPRESSION_ENFORCE_ENABLED = 'true'
+            })
+
+            it.each([
+                ['returns true for a suppressed row', true],
+                ['returns false for an identifier that is not on the list', false],
+            ])('%s', async (_label, expected) => {
+                const svc = new EmailSuppressionService(hub.postgres)
+                const email = expected ? 'listed@example.com' : 'not-listed@example.com'
+                if (expected) {
+                    await hub.postgres.query(
+                        PostgresUse.COMMON_WRITE,
+                        `INSERT INTO posthog_messagesuppression
+                            (id, team_id, identifier, source, reason, transient_bounce_count,
+                             suppressed, suppressed_at, deleted, created_at, updated_at)
+                         VALUES (gen_random_uuid(), $1, $2, 'BOUNCE', 'test row', 5,
+                             true, NOW(), false, NOW(), NOW())`,
+                        [team.id, email],
+                        'test-insert-suppression'
+                    )
+                }
+
+                expect(await svc.isSuppressed(team.id, email)).toBe(expected)
+            })
+        })
     })
 })

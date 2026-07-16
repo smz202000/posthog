@@ -263,23 +263,36 @@ export class EmailSuppressionService {
             return { key, teamId: parseInt(key.slice(0, idx), 10), identifier: key.slice(idx + 1) }
         })
 
-        const conditions = parsed.map((_, i) => `(team_id = $${i * 2 + 1} AND identifier = $${i * 2 + 2})`).join(' OR ')
-        const params = parsed.flatMap((p) => [p.teamId, p.identifier])
+        // Group by team_id so we run one indexed `identifier = ANY(...)` scan per team instead of an
+        // OR-chain of paired lookups. Same UNIQUE (team_id, identifier) index, cheaper plan and
+        // prepared-statement reuse — matters when the LazyLoader coalesces many keys in a batch.
+        // In practice most batches are single-team (one workflow, one team), so this is almost
+        // always a single query regardless of batch size.
+        const byTeam = new Map<number, string[]>()
+        for (const p of parsed) {
+            const list = byTeam.get(p.teamId) ?? []
+            list.push(p.identifier)
+            byTeam.set(p.teamId, list)
+        }
 
-        const query = `
-            SELECT team_id, identifier
-            FROM posthog_messagesuppression
-            WHERE (${conditions}) AND suppressed = true AND deleted = false
-        `
+        const suppressedKeys = new Set<string>()
+        for (const [teamId, identifiers] of byTeam) {
+            const result = await this.postgres.query<{ identifier: string }>(
+                PostgresUse.COMMON_READ,
+                `SELECT identifier
+                 FROM posthog_messagesuppression
+                 WHERE team_id = $1
+                   AND identifier = ANY($2)
+                   AND suppressed = true
+                   AND deleted = false`,
+                [teamId, identifiers],
+                'loadSuppressed'
+            )
+            for (const row of result.rows) {
+                suppressedKeys.add(toKey(teamId, row.identifier))
+            }
+        }
 
-        const result = await this.postgres.query<{ team_id: number; identifier: string }>(
-            PostgresUse.COMMON_READ,
-            query,
-            params,
-            'loadSuppressed'
-        )
-
-        const suppressedKeys = new Set(result.rows.map((row) => toKey(row.team_id, row.identifier)))
         // Default every requested key to false so the LazyLoader caches negatives too.
         return Object.fromEntries(parsed.map((p) => [p.key, suppressedKeys.has(p.key)]))
     }

@@ -1,11 +1,11 @@
-import { actions, afterMount, kea, listeners, path, reducers } from 'kea'
+import { actions, afterMount, kea, listeners, path, reducers, selectors } from 'kea'
 import { loaders } from 'kea-loaders'
 
 import { lemonToast } from '@posthog/lemon-ui'
 
 import api from 'lib/api'
 
-import type { SignalTeamConfig } from '../types'
+import type { SignalReportPriority, SignalTeamConfig } from '../types'
 import type { signalTeamConfigLogicType } from './signalTeamConfigLogicType'
 
 /**
@@ -41,6 +41,19 @@ export const signalTeamConfigLogic = kea<signalTeamConfigLogicType>([
         teamConfig: {
             patchTeamConfig: (state, { patch }) => (state ? { ...state, ...patch } : state),
         },
+    }),
+    selectors({
+        // Master switch for autonomous inbox PRs: only an explicit false disables
+        // auto-start, so a team that never touched the setting stays on.
+        autostartEnabled: [
+            (s) => [s.teamConfig],
+            (teamConfig: SignalTeamConfig | null): boolean => teamConfig?.autostart_enabled !== false,
+        ],
+        defaultAutostartPriority: [
+            (s) => [s.teamConfig],
+            (teamConfig: SignalTeamConfig | null): SignalReportPriority =>
+                teamConfig?.default_autostart_priority ?? 'P4',
+        ],
     }),
     listeners(({ actions }) => ({
         patchTeamConfig: async ({ patch }) => {

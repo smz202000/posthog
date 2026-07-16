@@ -366,6 +366,7 @@ export interface accessControlsLogicActions {
             | 'llm_provider_key'
             | 'llm_skill'
             | 'logs'
+            | 'loop'
             | 'marketing_analytics'
             | 'mcp_analytics'
             | 'metrics'
@@ -431,7 +432,7 @@ export interface accessControlsLogicMeta {
     __keaTypeGenInternalSelectorTypes: {
         allMembers: (sortedMembers: OrganizationMemberType[] | null) => OrganizationMemberType[]
         canUseRoles: (
-            hasAvailableFeature: (feature: AvailableFeature, currentUsage?: number | undefined) => boolean
+            hasAvailableFeature: (feature: AvailableFeature, currentUsage?: number | undefined) => boolean // userLogic
         ) => boolean
         canEdit: (defaults: AccessControlDefaultsResponse | null) => boolean
         availableProjectLevels: (defaults: AccessControlDefaultsResponse | null) => AccessControlLevel[]
@@ -500,6 +501,7 @@ export interface accessControlsLogicMeta {
                 | 'llm_provider_key'
                 | 'llm_skill'
                 | 'logs'
+                | 'loop'
                 | 'marketing_analytics'
                 | 'mcp_analytics'
                 | 'metrics'
@@ -638,6 +640,7 @@ export interface accessControlsLogicMeta {
                 | 'llm_provider_key'
                 | 'llm_skill'
                 | 'logs'
+                | 'loop'
                 | 'marketing_analytics'
                 | 'mcp_analytics'
                 | 'metrics'
@@ -749,6 +752,7 @@ export interface accessControlsLogicMeta {
                 | 'llm_provider_key'
                 | 'llm_skill'
                 | 'logs'
+                | 'loop'
                 | 'marketing_analytics'
                 | 'mcp_analytics'
                 | 'metrics'

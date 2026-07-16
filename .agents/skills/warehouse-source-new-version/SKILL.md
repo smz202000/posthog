@@ -60,3 +60,6 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- A source's implementation may already speak the vendor's newer API while the framework still labels it with the implicit `UNVERSIONED_API_VERSION` ("v1") default — check the base URL/auth/pagination in the request code against the vendor's version docs before assuming the code matches its label (EmailOctopus was already on v2's `api.emailoctopus.com`).
+- Some vendors don't encode the API version in the request at all (no path segment, header, or query param — EmailOctopus serves every version from one host). There's no request element to vary, so map every supported label to the same base URL and thread the version purely as a forward-compat dispatch seam; don't fabricate a divergent path.
+- Flipping `default_version` re-resolves `api_version = NULL` rows to the new default. Existing rows are only truly "byte-for-byte unaffected" if the old and new labels produce identical request behavior — verify that, don't just assert it. (New sources are stamped with the then-current `default_version` at creation, so most existing rows carry an explicit pin rather than NULL.)

@@ -60,3 +60,6 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- ServiceNow: the current `v1` used the versionless Table API path (`/api/now/table`), so map `v1`→versionless and the new `v2`→`/api/now/v2/table` — do NOT move `v1` onto `/api/now/v1/`, since versionless can resolve to a newer version on the instance and repathing it would change existing rows' responses. Row shapes are identical across v1/v2 for our params (`sysparm_display_value=false`, `sysparm_exclude_reference_link=true`), so only the URL segment differs.
+- When a source stamps `default_version` at creation (`_create_external_data_source`), existing rows carry an explicit pin, so flipping the default is safe for them — the byte-for-byte guarantee holds without any migration.
+- Test the version→URL/segment mapping as a pure function (incl. the unknown-pin fallback) AND assert the resolved pin reaches the request boundary (mock the HTTP session, capture the URL) — the two aren't redundant: one covers the mapping, the other the wiring.

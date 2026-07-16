@@ -60,3 +60,6 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Google Sheets: gspread pins the Sheets v4 base URL (`gspread.urls`) with no per-client version knob, so the old `"v1"` (framework UNVERSIONED default) and new `"v4"` labels drive identical calls — this was a purely declarative default bump. When a client library bakes in the version, still thread `resolve_api_version(inputs.api_version)` from `source_for_pipeline` to the client-build layer as the dispatch seam (test it) even though it's a no-op today; don't hunt for a nonexistent per-version branch.
+- Make the request-layer entry's `api_version` a required arg (no default) so no fallback version hides there; give discovery/validation helpers a default label since they run at creation time with no pin.
+- Threading `api_version` into a `@cached` worksheet/handle getter adds it to the cache key — harmless (constant per sync), but parameterized version tests must use a distinct URL per case or the TTLCache serves one case's result to another.

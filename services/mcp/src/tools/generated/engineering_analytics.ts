@@ -31,6 +31,7 @@ const engineeringAnalyticsBrokenTests = (): ToolBase<
             method: 'GET',
             path: `/api/projects/${encodeURIComponent(String(projectId))}/engineering_analytics/broken_tests/`,
             query: {
+                repo: params.repo,
                 source_id: params.source_id,
             },
         })
@@ -80,6 +81,7 @@ const engineeringAnalyticsFlakyTests = (): ToolBase<
                 limit: params.limit,
                 min_failed_prs: params.min_failed_prs,
                 min_rerun_passes: params.min_rerun_passes,
+                repo: params.repo,
                 source_id: params.source_id,
             },
         })
@@ -121,6 +123,7 @@ const engineeringAnalyticsRunFailureLogs = (): ToolBase<
             method: 'GET',
             path: `/api/projects/${encodeURIComponent(String(projectId))}/engineering_analytics/run_failure_logs/`,
             query: {
+                repo: params.repo,
                 run_id: params.run_id,
                 source_id: params.source_id,
             },
@@ -162,6 +165,7 @@ const engineeringAnalyticsWorkflowJobs = (): ToolBase<
             method: 'GET',
             path: `/api/projects/${encodeURIComponent(String(projectId))}/engineering_analytics/workflow_jobs/`,
             query: {
+                repo: params.repo,
                 run_attempt: params.run_attempt,
                 run_id: params.run_id,
                 source_id: params.source_id,
@@ -234,6 +238,7 @@ const pullRequests = (): ToolBase<typeof PullRequestsSchema, WithPostHogUrl<Sche
             query: {
                 author: params.author,
                 date_from: params.date_from,
+                repo: params.repo,
                 source_id: params.source_id,
             },
         })
@@ -265,6 +270,7 @@ const workflowHealth = (): ToolBase<typeof WorkflowHealthSchema, WithPostHogUrl<
                 branch: params.branch,
                 date_from: params.date_from,
                 date_to: params.date_to,
+                repo: params.repo,
                 run_scope: params.run_scope,
                 source_id: params.source_id,
             },

@@ -20,24 +20,16 @@ type AlertTableRecord = Record<string, any> & {
 
 export type AlertsTableGenericColumn = 'name' | 'lastChecked' | 'lastNotified' | 'createdBy' | 'enabled'
 export type AlertsTableColumn<T extends AlertTableRecord> = LemonTableColumn<T, keyof T | undefined>
-export interface AlertsTableColumns<T extends AlertTableRecord> {
-    actions?: AlertsTableColumn<T>[]
-    context?: AlertsTableColumn<T>[]
-    createdBy?: AlertsTableColumn<T>
-    details?: AlertsTableColumn<T>[]
-    enabled?: AlertsTableColumn<T>
-    leading?: AlertsTableColumn<T>[]
-    schedule?: AlertsTableColumn<T>[]
-    showLastNotified?: boolean
-    status?: AlertsTableColumn<T>
-}
+export type AlertsTableColumns<T extends AlertTableRecord> = Record<string, AlertsTableColumn<T>>
+export type AlertsTableColumnOrder<TColumns> = (AlertsTableGenericColumn | Extract<keyof TColumns, string>)[]
 
-export interface AlertsTableProps<T extends AlertTableRecord> extends Omit<
+export interface AlertsTableProps<T extends AlertTableRecord, TColumns extends AlertsTableColumns<T>> extends Omit<
     LemonTableProps<T>,
     'columns' | 'dataSource' | 'emptyState' | 'noSortingCancellation' | 'nouns' | 'rowKey'
 > {
     alerts: T[]
-    columns: AlertsTableColumns<T>
+    columnOrder: AlertsTableColumnOrder<TColumns>
+    columns: TColumns
     emptyState?: ReactNode
     getAlertUrl?: (alert: T) => string
     isFiltering?: boolean
@@ -121,36 +113,37 @@ function genericColumn<T extends AlertTableRecord>(
     }
 }
 
-export function AlertsTable<T extends AlertTableRecord>({
+export function AlertsTable<T extends AlertTableRecord, TColumns extends AlertsTableColumns<T>>({
     alerts,
+    columnOrder,
     columns,
     emptyState,
     getAlertUrl,
     isFiltering = false,
     loadingSkeletonRows = 5,
     ...tableProps
-}: AlertsTableProps<T>): JSX.Element {
+}: AlertsTableProps<T, TColumns>): JSX.Element {
     let resolvedEmptyState = emptyState
     if (resolvedEmptyState === undefined && isFiltering) {
         resolvedEmptyState = <div className="py-8 text-center text-secondary">No alerts match your filters</div>
     }
 
-    const statusColumns = columns.status ? [columns.status] : []
-    const lastNotifiedColumns =
-        columns.showLastNotified === false ? [] : [genericColumn<T>('lastNotified', getAlertUrl)]
-    const resolvedColumns = [
-        ...(columns.leading || []),
-        genericColumn<T>('name', getAlertUrl),
-        ...statusColumns,
-        ...(columns.details || []),
-        genericColumn<T>('lastChecked', getAlertUrl),
-        ...lastNotifiedColumns,
-        ...(columns.schedule || []),
-        columns.createdBy || genericColumn<T>('createdBy', getAlertUrl),
-        ...(columns.context || []),
-        columns.enabled || genericColumn<T>('enabled', getAlertUrl),
-        ...(columns.actions || []),
-    ]
+    const defaultColumns: Record<AlertsTableGenericColumn, AlertsTableColumn<T>> = {
+        name: genericColumn('name', getAlertUrl),
+        lastChecked: genericColumn('lastChecked', getAlertUrl),
+        lastNotified: genericColumn('lastNotified', getAlertUrl),
+        createdBy: genericColumn('createdBy', getAlertUrl),
+        enabled: genericColumn('enabled', getAlertUrl),
+    }
+    const customColumns: Partial<Record<string, AlertsTableColumn<T>>> = columns
+    const resolvedColumns = columnOrder.map((columnKey) => {
+        const customColumn = customColumns[columnKey]
+        if (customColumn) {
+            return customColumn
+        }
+
+        return defaultColumns[columnKey as AlertsTableGenericColumn]
+    })
 
     return (
         <LemonTable

@@ -7,7 +7,11 @@ import { urls } from 'scenes/urls'
 
 import { AlertState } from '~/queries/schema/schema-general'
 
-import { AlertsTable, AlertsTableColumns } from 'products/alerts/frontend/components/AlertsTable'
+import {
+    AlertsTable,
+    AlertsTableColumnOrder,
+    AlertsTableColumns,
+} from 'products/alerts/frontend/components/AlertsTable'
 import { alertIntervalDisplayLabel } from 'products/alerts/frontend/logic/alertIntervalHelpers'
 
 import { AlertType } from '../types'
@@ -21,13 +25,11 @@ interface InsightAlertsTableProps {
 }
 
 export function InsightAlertsTable({ alerts, isFiltering, loading, pagination }: InsightAlertsTableProps): JSX.Element {
-    const columns: AlertsTableColumns<AlertType> = {
-        leading: [
-            {
-                key: 'id',
-                width: 32,
-            },
-        ],
+    const columns = {
+        leading: {
+            key: 'id',
+            width: 32,
+        },
         status: {
             title: 'Status',
             dataIndex: 'state',
@@ -35,43 +37,49 @@ export function InsightAlertsTable({ alerts, isFiltering, loading, pagination }:
                 return alert.enabled ? <AlertStateIndicator alert={alert} /> : null
             },
         },
-        details: [
-            {
-                title: 'Interval',
-                dataIndex: 'calculation_interval',
-                key: 'calculation_interval',
-                render: function renderInterval(_, alert) {
-                    return (
-                        <div className="whitespace-nowrap">{alertIntervalDisplayLabel(alert.calculation_interval)}</div>
-                    )
-                },
+        interval: {
+            title: 'Interval',
+            dataIndex: 'calculation_interval',
+            key: 'calculation_interval',
+            render: function renderInterval(_, alert) {
+                return <div className="whitespace-nowrap">{alertIntervalDisplayLabel(alert.calculation_interval)}</div>
             },
-        ],
+        },
         createdBy: createdByColumn<AlertType>() as LemonTableColumn<AlertType, keyof AlertType | undefined>,
-        context: [
-            {
-                title: 'Insight',
-                dataIndex: 'insight',
-                key: 'insight',
-                render: function renderInsightLink(_, alert) {
-                    return (
-                        <LemonTableLink
-                            to={urls.insightView(alert.insight.short_id)}
-                            title={
-                                <Tooltip title={alert.insight.name}>
-                                    <div>{alert.insight.name || alert.insight.derived_name}</div>
-                                </Tooltip>
-                            }
-                        />
-                    )
-                },
+        insight: {
+            title: 'Insight',
+            dataIndex: 'insight',
+            key: 'insight',
+            render: function renderInsightLink(_, alert) {
+                return (
+                    <LemonTableLink
+                        to={urls.insightView(alert.insight.short_id)}
+                        title={
+                            <Tooltip title={alert.insight.name}>
+                                <div>{alert.insight.name || alert.insight.derived_name}</div>
+                            </Tooltip>
+                        }
+                    />
+                )
             },
-        ],
-    }
+        },
+    } satisfies AlertsTableColumns<AlertType>
+    const columnOrder = [
+        'leading',
+        'name',
+        'status',
+        'interval',
+        'lastChecked',
+        'lastNotified',
+        'createdBy',
+        'insight',
+        'enabled',
+    ] satisfies AlertsTableColumnOrder<typeof columns>
 
     return (
         <AlertsTable
             alerts={alerts}
+            columnOrder={columnOrder}
             columns={columns}
             getAlertUrl={(alert) => urls.alert(alert.id)}
             isFiltering={isFiltering}

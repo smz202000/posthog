@@ -162,6 +162,10 @@ export function WorkflowsScene(props: WorkflowsSceneProps = {}): JSX.Element {
             : []),
     ]
 
+    // Suppression list is hidden until enforcement rolls out — until then the tab would show
+    // entries that don't yet block sends, which would be confusing.
+    const suppressionListEnabled = !!featureFlags[FEATURE_FLAGS.WORKFLOWS_SUPPRESSION_LIST]
+
     const tabs: LemonTab<WorkflowsSceneTab>[] = [
         {
             label: 'Workflows',
@@ -191,12 +195,16 @@ export function WorkflowsScene(props: WorkflowsSceneProps = {}): JSX.Element {
             content: <OptOutScene />,
             link: urls.workflows('opt-outs'),
         },
-        {
-            label: 'Suppression list',
-            key: 'suppression',
-            content: <SuppressionScene />,
-            link: urls.workflows('suppression'),
-        },
+        ...(suppressionListEnabled
+            ? [
+                  {
+                      label: 'Suppression list',
+                      key: 'suppression' as const,
+                      content: <SuppressionScene />,
+                      link: urls.workflows('suppression'),
+                  },
+              ]
+            : []),
     ]
 
     return (

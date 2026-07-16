@@ -60,3 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Whole-service sunset ≠ version bump: when the vendor retires the entire API with no successor (e.g. Delighted, single-version v1), you can't deprecate the sole/default version — the invariant `default_version not in deprecated` forbids it and the banner would say "migrate to <default>" (its own target). Don't fabricate a v2 or write a no-op v1→v1 migration; document the sunset + manual path (export data, remove source) and rely on the source's 410-Gone `get_non_retryable_errors` mapping to auto-disable it when the vendor pulls the plug.

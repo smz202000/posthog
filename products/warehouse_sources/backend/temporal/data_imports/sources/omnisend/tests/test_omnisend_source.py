@@ -108,6 +108,14 @@ class TestOmnisendSource:
         assert any("401" in key for key in errors)
         assert any("403" in key for key in errors)
 
+    def test_new_default_version_is_the_dated_version(self) -> None:
+        source = OmnisendSource()
+        assert source.default_version == "2026-03-15"
+        assert set(source.supported_versions) == {"v3", "2026-03-15"}
+        # An unpinned source resolves to the new default; existing v3 pins are honored verbatim.
+        assert source.resolve_api_version(None) == "2026-03-15"
+        assert source.resolve_api_version("v3") == "v3"
+
     def test_source_for_pipeline_plumbs_arguments(self) -> None:
         manager = MagicMock(spec=ResumableSourceManager)
         inputs = _source_inputs(schema_name="orders")
@@ -121,3 +129,18 @@ class TestOmnisendSource:
         assert kwargs["api_key"] == "test-key"
         assert kwargs["endpoint"] == "orders"
         assert kwargs["resumable_source_manager"] is manager
+
+    @pytest.mark.parametrize(
+        ("pinned", "expected"),
+        [(None, "2026-03-15"), ("2026-03-15", "2026-03-15"), ("v3", "v3")],
+    )
+    def test_source_for_pipeline_passes_resolved_version(self, pinned: str | None, expected: str) -> None:
+        manager = MagicMock(spec=ResumableSourceManager)
+        inputs = _source_inputs(schema_name="orders", api_version=pinned)
+        with patch(
+            "products.warehouse_sources.backend.temporal.data_imports.sources.omnisend.source.omnisend_source"
+        ) as mock_source:
+            mock_source.return_value = MagicMock(spec=SourceResponse)
+            OmnisendSource().source_for_pipeline(_config(), manager, inputs)
+
+        assert mock_source.call_args.kwargs["api_version"] == expected

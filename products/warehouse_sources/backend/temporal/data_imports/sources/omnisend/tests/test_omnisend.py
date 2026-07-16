@@ -12,6 +12,7 @@ from products.warehouse_sources.backend.temporal.data_imports.sources.common.res
 from products.warehouse_sources.backend.temporal.data_imports.sources.omnisend.omnisend import (
     OMNISEND_BASE_URL,
     OmnisendResumeConfig,
+    _get_headers,
     get_rows,
     omnisend_source,
     validate_credentials,
@@ -37,6 +38,7 @@ def _drive_get_rows(
     endpoint: str,
     manager: MagicMock,
     responses: list[Response],
+    api_version: str = "v3",
 ) -> tuple[list[str], list[list[dict[str, Any]]]]:
     sent_urls: list[str] = []
     response_iter = iter(responses)
@@ -55,6 +57,7 @@ def _drive_get_rows(
                 endpoint=endpoint,
                 logger=MagicMock(),
                 resumable_source_manager=manager,
+                api_version=api_version,
             )
         )
 
@@ -193,6 +196,51 @@ class TestGetRowsSession:
         assert kwargs["headers"]["X-API-KEY"] == "test-key"
         MockSession.assert_called_once()
         MockSession.return_value.close.assert_called_once()
+
+
+class TestVersionHeader:
+    @pytest.mark.parametrize(
+        ("api_version", "expects_version_header"),
+        [("v3", False), ("2026-03-15", True)],
+    )
+    def test_get_headers_sends_version_header_only_for_dated_versions(
+        self, api_version: str, expects_version_header: bool
+    ) -> None:
+        # Legacy v3 keeps its byte-for-byte request path (no version header); dated versions
+        # are selected via `Omnisend-Version`.
+        headers = _get_headers("test-key", api_version)
+        assert headers["X-API-KEY"] == "test-key"
+        if expects_version_header:
+            assert headers["Omnisend-Version"] == api_version
+        else:
+            assert "Omnisend-Version" not in headers
+
+    @pytest.mark.parametrize(
+        ("api_version", "expects_version_header"),
+        [("v3", False), ("2026-03-15", True)],
+    )
+    def test_resolved_version_reaches_the_session(self, api_version: str, expects_version_header: bool) -> None:
+        manager = MagicMock(spec=ResumableSourceManager)
+        manager.can_resume.return_value = False
+
+        with patch(
+            "products.warehouse_sources.backend.temporal.data_imports.sources.omnisend.omnisend.make_tracked_session"
+        ) as MockSession:
+            MockSession.return_value.get.return_value = _make_response(
+                {"contacts": [{"contactID": "1"}], "paging": {"next": None}}
+            )
+            list(
+                get_rows(
+                    api_key="test-key",
+                    endpoint="contacts",
+                    logger=MagicMock(),
+                    resumable_source_manager=manager,
+                    api_version=api_version,
+                )
+            )
+
+        headers = MockSession.call_args.kwargs["headers"]
+        assert headers.get("Omnisend-Version") == (api_version if expects_version_header else None)
 
 
 class TestValidateCredentials:

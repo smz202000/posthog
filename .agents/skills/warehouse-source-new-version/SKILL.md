@@ -60,3 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Salesforce: version is just the `/services/data/<version>/query` URL segment — thread the resolved string into `get_resource`/`salesforce_source` and build the path with an f-string; SOQL, pagination and response shapes are identical across v61→v67 so no per-version branching or column-hint gating needed.

@@ -60,3 +60,5 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Mixpanel: the vendor version only lives in the raw-export path segment (`/api/2.0/export`); the query APIs (`/api/query/…`, `/api/app/…`) are not version-carrying — trust the live docs over detection notes and leave non-versioned paths alone. When old and new labels resolve to the same real path, still thread the version through a `{label: segment}` map so the seam exists and is testable; give the internal URL builder a `.get(version, <current-path>)` fallback since a pin is honored verbatim and unknown labels can reach it.
+- Test pattern: parameterize the request-layer test over every supported version asserting the built URL/path, and assert `default_version` + `supported_versions` explicitly — the registry invariant test only checks relationships, not the specific values.

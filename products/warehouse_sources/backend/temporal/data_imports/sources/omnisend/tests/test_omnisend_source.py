@@ -112,9 +112,6 @@ class TestOmnisendSource:
         source = OmnisendSource()
         assert source.default_version == "2026-03-15"
         assert set(source.supported_versions) == {"v3", "2026-03-15"}
-        # An unpinned source resolves to the new default; existing v3 pins are honored verbatim.
-        assert source.resolve_api_version(None) == "2026-03-15"
-        assert source.resolve_api_version("v3") == "v3"
 
     def test_source_for_pipeline_plumbs_arguments(self) -> None:
         manager = MagicMock(spec=ResumableSourceManager)

@@ -460,6 +460,7 @@ the row lists both.
 | unleash                   | HTTP                        | requests                                                        | ✅                          |
 | unstructured              | HTTP                        | requests                                                        | ✅                          |
 | upstash                   | HTTP                        | requests                                                        | ✅                          |
+| uservoice                 | HTTP                        | requests                                                        | ✅                          |
 | vantage                   | HTTP                        | requests                                                        | ✅                          |
 | vapi                      | HTTP                        | requests                                                        | ✅                          |
 | vellum                    | HTTP                        | requests                                                        | ✅                          |
@@ -953,7 +954,6 @@ doesn't conflict with concurrent PRs.
 - uptimerobot
 - us_census
 - usersnap
-- uservoice
 - veeqo
 - veracode
 - vespa

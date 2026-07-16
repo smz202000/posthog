@@ -106,6 +106,36 @@ describe('EmailSuppressionService', () => {
                 suppressed: false,
             })
         })
+
+        it('ignores a delivery older than the last bounce (out-of-order events)', async () => {
+            // Guards against SES delivery + bounce notifications for different sends arriving in any
+            // order — a late delivery for an older send must not erase a fresh bounce.
+            const svc = new EmailSuppressionService(hub.postgres)
+            const email = 'flaky@example.com'
+
+            await svc.recordTransientBounces(team.id, [email], 'temp')
+            const rowAfterBounce = await readRow(email)
+            expect(rowAfterBounce?.transient_bounce_count).toBe(1)
+
+            // Delivery timestamp is 1 hour before the bounce we just recorded.
+            const olderTimestamp = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+            await svc.recordDeliveries(team.id, [email], olderTimestamp)
+
+            expect((await readRow(email))?.transient_bounce_count).toBe(1)
+        })
+
+        it('resets the counter when the delivery is newer than the last bounce', async () => {
+            const svc = new EmailSuppressionService(hub.postgres)
+            const email = 'legit-recovering@example.com'
+
+            await svc.recordTransientBounces(team.id, [email], 'temp')
+            expect((await readRow(email))?.transient_bounce_count).toBe(1)
+
+            const futureTimestamp = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+            await svc.recordDeliveries(team.id, [email], futureTimestamp)
+
+            expect((await readRow(email))?.transient_bounce_count).toBe(0)
+        })
     })
 
     describe('recordHardBounces (write flag on)', () => {

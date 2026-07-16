@@ -147,7 +147,8 @@ export class EmailTrackingService {
         private trackingCodeSigner: EmailTrackingCodeSigner,
         private emailSuppressionService: EmailSuppressionService
     ) {
-        this.sesWebhookHandler = new SesWebhookHandler(this.trackingCodeSigner)
+        const allowedTopicArns = (process.env.SES_ALLOWED_SNS_TOPIC_ARNS ?? '').split(',')
+        this.sesWebhookHandler = new SesWebhookHandler(this.trackingCodeSigner, allowedTopicArns)
     }
 
     public async trackMetric({
@@ -392,10 +393,10 @@ export class EmailTrackingService {
             // first so a delivery + bounce in the same batch nets out conservatively (count resets,
             // then the fresh bounce re-counts from a clean slate).
             try {
-                for (const { teamId, emailAddresses } of deliveredRecipients || []) {
+                for (const { teamId, emailAddresses, timestamp } of deliveredRecipients || []) {
                     const parsedTeamId = teamId ? parseInt(teamId, 10) : NaN
                     if (parsedTeamId && !isNaN(parsedTeamId)) {
-                        await this.emailSuppressionService.recordDeliveries(parsedTeamId, emailAddresses)
+                        await this.emailSuppressionService.recordDeliveries(parsedTeamId, emailAddresses, timestamp)
                     }
                 }
                 for (const { teamId, emailAddresses, diagnostic } of transientBounceRecipients || []) {

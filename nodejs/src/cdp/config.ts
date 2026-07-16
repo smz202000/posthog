@@ -131,6 +131,11 @@ export type CdpConfig = ClickhouseConfig & {
     SES_ACCESS_KEY_ID: string
     SES_SECRET_ACCESS_KEY: string
     SES_REGION: string
+    // Comma-separated list of SNS Topic ARNs the SES webhook is allowed to accept events from.
+    // Blocks the "attacker subscribes our webhook to their own SNS topic" attack — an event from a
+    // topic not on this list is rejected before its recipient-state mutations are applied. Empty
+    // string means no restriction (dev/test); production must set this to the workflow SES topic.
+    SES_ALLOWED_SNS_TOPIC_ARNS: string
 
     // Destination migration diffing
     DESTINATION_MIGRATION_DIFFING_ENABLED: boolean
@@ -264,6 +269,7 @@ export function getDefaultCdpConfig(): CdpConfig {
         SES_ACCESS_KEY_ID: isTestEnv() || isDevEnv() ? 'test' : '',
         SES_SECRET_ACCESS_KEY: isTestEnv() || isDevEnv() ? 'test' : '',
         SES_REGION: isTestEnv() || isDevEnv() ? 'us-east-1' : '',
+        SES_ALLOWED_SNS_TOPIC_ARNS: '',
 
         // Destination migration diffing
         DESTINATION_MIGRATION_DIFFING_ENABLED: false,

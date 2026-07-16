@@ -52,7 +52,10 @@ class MessageSuppressionViewSet(TeamAndOrgViewSetMixin, viewsets.ViewSet):
     user. This viewset lets users see and edit the list for full visibility.
     """
 
-    scope_object = "INTERNAL"
+    scope_object = "hog_flow"
+    # Custom actions must declare their write status so TeamAndOrgViewSetMixin's AccessControlPermission
+    # checks hog_flow:write on the mutating endpoints; the default 'suppressions' list stays a read.
+    scope_object_write_actions = ["add_suppression", "remove_suppression"]
     serializer_class = _FallbackSerializer
 
     @extend_schema(

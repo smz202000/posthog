@@ -229,8 +229,13 @@ export class EmailSuppressionService {
     /**
      * Record successful deliveries. Resets the consecutive-bounce counter for auto (non-manual)
      * entries that haven't yet been suppressed, so a transient outage never accumulates.
+     *
+     * `deliveryTimestamp` guards against out-of-order events: SES delivery and bounce notifications
+     * for different sends can arrive in any order, and a late delivery for an older send must not
+     * erase a fresh bounce for a newer send. Reset only when the delivery is newer than the last
+     * recorded bounce.
      */
-    public async recordDeliveries(teamId: number, emails: string[]): Promise<void> {
+    public async recordDeliveries(teamId: number, emails: string[], deliveryTimestamp?: string): Promise<void> {
         if (!this.writeEnabled) {
             return
         }
@@ -247,9 +252,15 @@ export class EmailSuppressionService {
               AND source <> 'MANUAL'
               AND suppressed = false
               AND transient_bounce_count > 0
+              AND (last_bounce_at IS NULL OR $3::timestamptz IS NULL OR last_bounce_at < $3::timestamptz)
         `
         try {
-            await this.postgres.query(PostgresUse.COMMON_WRITE, query, [teamId, identifiers], 'resetBounceCounts')
+            await this.postgres.query(
+                PostgresUse.COMMON_WRITE,
+                query,
+                [teamId, identifiers, deliveryTimestamp ?? null],
+                'resetBounceCounts'
+            )
         } catch (error) {
             logger.error('[EmailSuppression] Failed to reset bounce counts on delivery', { teamId, error })
         }

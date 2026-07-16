@@ -341,7 +341,9 @@ describe('SesWebhookHandler', () => {
         ]
         const result = await handler.handleWebhook({ body, headers: {} })
         expect(result.status).toBe(200)
-        expect(result.deliveredRecipients).toEqual([{ teamId: '1', emailAddresses: ['to@example.com'] }])
+        expect(result.deliveredRecipients).toEqual([
+            { teamId: '1', emailAddresses: ['to@example.com'], timestamp: '2025-10-03T12:04:00Z' },
+        ])
         expect(result.transientBounceRecipients).toEqual([])
     })
 
@@ -699,6 +701,129 @@ describe('SesWebhookHandler', () => {
             expect(result.status).toBe(200)
             expect(result.metrics).toEqual([])
             expect(result.logEntries).toEqual([])
+        })
+    })
+
+    describe('security: TopicArn allowlist + signed-code gate', () => {
+        // Prevents the "attacker subscribes our webhook to their own SNS topic then publishes crafted
+        // bounces" attack. The allowlist rejects events from any TopicArn we didn't configure, and the
+        // signed-code gate refuses to accept teamId from the attacker-controllable SES tag carrier for
+        // state-changing writes.
+        const buildEnvelope = (
+            topicArn: string,
+            innerRecord: object,
+            envelopeType: 'Notification' | 'SubscriptionConfirmation' = 'Notification'
+        ): Record<string, any> => ({
+            Type: envelopeType,
+            MessageId: 'sns-msg-1',
+            TopicArn: topicArn,
+            Message: envelopeType === 'Notification' ? JSON.stringify(innerRecord) : JSON.stringify({}),
+            Timestamp: '2025-10-03T12:10:00Z',
+            SignatureVersion: '1',
+            Signature: 'stubbed',
+            SigningCertURL: 'https://sns.us-east-1.amazonaws.com/cert.pem',
+        })
+
+        it('rejects a Notification whose TopicArn is not on the allowlist', async () => {
+            const restricted = new SesWebhookHandler(signer, ['arn:aws:sns:us-east-1:123456789012:allowed-topic'])
+            const envelope = buildEnvelope('arn:aws:sns:us-east-1:999999999999:attacker-topic', {
+                eventType: 'Bounce',
+                mail: baseMail,
+                bounce: {
+                    bounceType: 'Permanent',
+                    bouncedRecipients: [{ emailAddress: 'victim@example.com', diagnosticCode: 'bad' }],
+                    timestamp: '2025-10-03T12:04:00Z',
+                },
+            })
+            const result = await restricted.handleWebhook({ body: envelope, headers: {}, verifySignature: false })
+            expect(result.status).toBe(403)
+            expect(result.optOutRecipients).toBeUndefined()
+            expect(result.hardBounceRecipients).toBeUndefined()
+        })
+
+        it('accepts a Notification whose TopicArn matches the allowlist', async () => {
+            const restricted = new SesWebhookHandler(signer, ['arn:aws:sns:us-east-1:123456789012:allowed-topic'])
+            const envelope = buildEnvelope('arn:aws:sns:us-east-1:123456789012:allowed-topic', {
+                eventType: 'Bounce',
+                mail: baseMail,
+                bounce: {
+                    bounceType: 'Permanent',
+                    bouncedRecipients: [{ emailAddress: 'victim@example.com', diagnosticCode: 'bad' }],
+                    timestamp: '2025-10-03T12:04:00Z',
+                },
+            })
+            const result = await restricted.handleWebhook({ body: envelope, headers: {}, verifySignature: false })
+            expect(result.status).toBe(200)
+            expect(result.optOutRecipients).toEqual([{ teamId: '1', emailAddresses: ['victim@example.com'] }])
+        })
+
+        it('empty allowlist means no restriction (dev/test backward compat)', async () => {
+            // The default `handler` in the outer beforeEach was constructed without an allowlist.
+            const envelope = buildEnvelope('arn:aws:sns:us-east-1:999999999999:some-topic', {
+                eventType: 'Bounce',
+                mail: baseMail,
+                bounce: {
+                    bounceType: 'Permanent',
+                    bouncedRecipients: [{ emailAddress: 'to@example.com', diagnosticCode: 'bad' }],
+                    timestamp: '2025-10-03T12:04:00Z',
+                },
+            })
+            const result = await handler.handleWebhook({ body: envelope, headers: {}, verifySignature: false })
+            expect(result.status).toBe(200)
+        })
+
+        it('rejects a SubscriptionConfirmation from a disallowed topic (blocks attacker auto-subscribe)', async () => {
+            const restricted = new SesWebhookHandler(signer, ['arn:aws:sns:us-east-1:123456789012:allowed-topic'])
+            const envelope = buildEnvelope(
+                'arn:aws:sns:us-east-1:999999999999:attacker-topic',
+                {},
+                'SubscriptionConfirmation'
+            )
+            const result = await restricted.handleWebhook({ body: envelope, headers: {}, verifySignature: false })
+            expect(result.status).toBe(403)
+        })
+
+        it('does not populate suppression writes for an unsigned tracking code (attacker-controllable teamId)', async () => {
+            // The short SES-tag carrier is unsigned; an attacker who can reach the parser could put any
+            // teamId in it. Metrics/log entries still fire (engagement signal), but state changes don't.
+            const unsignedMail = {
+                ...baseMail,
+                headers: undefined,
+                tags: { ph_id: [signer.generateShort(baseInvocation)] },
+            }
+            const body = [
+                {
+                    eventType: 'Bounce',
+                    mail: unsignedMail,
+                    bounce: {
+                        bounceType: 'Transient',
+                        bouncedRecipients: [{ emailAddress: 'victim@example.com', diagnosticCode: 'temp' }],
+                        timestamp: '2025-10-03T12:04:00Z',
+                    },
+                },
+                {
+                    eventType: 'Bounce',
+                    mail: unsignedMail,
+                    bounce: {
+                        bounceType: 'Permanent',
+                        bouncedRecipients: [{ emailAddress: 'victim2@example.com', diagnosticCode: 'bad' }],
+                        timestamp: '2025-10-03T12:04:00Z',
+                    },
+                },
+                {
+                    eventType: 'Delivery',
+                    mail: unsignedMail,
+                    delivery: { timestamp: '2025-10-03T12:05:00Z', recipients: ['delivered@example.com'] },
+                },
+            ]
+            const result = await handler.handleWebhook({ body, headers: {} })
+            expect(result.status).toBe(200)
+            expect(result.transientBounceRecipients).toEqual([])
+            expect(result.hardBounceRecipients).toEqual([])
+            expect(result.deliveredRecipients).toEqual([])
+            expect(result.optOutRecipients).toEqual([])
+            // Metrics are unaffected — engagement signal is still emitted for the parsed events.
+            expect(result.metrics?.length).toBeGreaterThan(0)
         })
     })
 })

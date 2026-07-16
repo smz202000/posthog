@@ -60,3 +60,5 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Omnisend: date-based versions are selected via an `Omnisend-Version` header while the REST base path stays `/v3`; gate the header on the legacy label (send it only for non-legacy versions) so the pinned legacy version's request is byte-for-byte unchanged. Test the header-builder as a pure function plus one `get_rows` case asserting the header reaches `make_tracked_session` — cheaper than driving the source.
+- Leave `validate_credentials` on the legacy path when the old version stays available; it runs at creation with no pin and changing it isn't needed for a plain version add.

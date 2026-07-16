@@ -60,3 +60,5 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- LinkedIn Ads: the source shipped with the default `"v1"` label while the client hard-coded the real vendor header (`API_VERSION`, a YYYYMM string). Add dispatch by mapping the opaque label → header in the source and keeping `"v1"` → the old header so existing pins stay byte-for-byte identical; thread the header through the client's `__init__(api_version=...)` (default = legacy header keeps `validate_credentials`/account-listing paths unchanged).
+- LinkedIn Ads (LMS) monthly versions are header-only for the ad endpoints we sync (accounts/campaigns/campaign_groups/creatives/analytics) — new API versions add analytics metrics and campaign enums but don't rename/remove fields, change pagination, or add required headers, and we request a fixed `fields` set, so a version bump needs no schema or request-path branching.

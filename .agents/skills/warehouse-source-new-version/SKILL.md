@@ -60,3 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Pipedrive: a source can already ship a mix of vendor endpoint versions under one label — the `v1`→`v2` bump touched only `activities` (the one deprecated v1 endpoint with a v2 replacement); `notes`/`leads`/`users`/`*_fields` have no v2 and stay v1 under both labels. Dispatch just the diverging endpoint (`endpoints_for_version(version)` swapping one `EndpointConfig`), keep the version-independent endpoint-name tuple for schema discovery, and leave the v1-only `validate_credentials` probe (`/api/v1/users/me`) alone.

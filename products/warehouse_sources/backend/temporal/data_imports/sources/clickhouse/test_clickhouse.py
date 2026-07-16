@@ -661,6 +661,9 @@ class TestClickHouseSourceNonRetryableErrors:
             # Transient gateway errors must stay retryable — only 404 is permanent.
             "HTTPDriver for https://example.ngrok-free.dev:443 returned response code 502",
             "HTTPDriver for https://example.ngrok-free.dev:443 returned response code 503",
+            # Upstream rate-limit (429 Too Many Requests). Throttling is transient — the
+            # window clears and a later attempt succeeds — so it must not stop the sync.
+            "HTTPDriver for https://example.ngrok-free.dev:443 returned response code 429",
         ],
     )
     def test_transient_errors_are_retryable(self, source, error_msg):

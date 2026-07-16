@@ -76,4 +76,29 @@ describe('useMcpToolApplyBack', () => {
         expect(onApply.mock.calls[1][0].toolCallId).toBe('c')
         expect(onApply.mock.calls[1][1].innerInput).toEqual({ name: 'third' })
     })
+
+    it('does not apply while inactive and drops a buffered completion when deactivated', () => {
+        const onApply = jest.fn()
+        const { rerender } = renderHook(
+            ({ active }) => useMcpToolApplyBack({ tools: ['create_insight'], onApply, active }),
+            { initialProps: { active: false } }
+        )
+
+        act(() => {
+            foregroundStreamLogic.actions.setForegroundStream('run-1')
+            toolStreamEventsLogic.actions.emitToolEvent(completed('call create_insight {"name":"hidden"}', 'hidden'))
+            toolStreamEventsLogic.actions.emitRunLifecycleEvent({ streamKey: 'run-1', status: 'completed' })
+        })
+        expect(onApply).not.toHaveBeenCalled()
+
+        rerender({ active: true })
+        act(() => {
+            toolStreamEventsLogic.actions.emitToolEvent(completed('call create_insight {"name":"visible"}', 'visible'))
+        })
+        rerender({ active: false })
+        act(() => {
+            toolStreamEventsLogic.actions.emitRunLifecycleEvent({ streamKey: 'run-1', status: 'completed' })
+        })
+        expect(onApply).not.toHaveBeenCalled()
+    })
 })

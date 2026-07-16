@@ -60,3 +60,6 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- incident.io: versions per-resource, not globally — some resources are v2-only, some v1-only, a few expose both. Model paths as a `{version: path}` map per endpoint with a `path_for(pin)` that falls back to the version the resource actually offers, so a coarse source pin never invents a nonexistent URL.
+- incident.io: when the source's implicit version was the `UNVERSIONED_API_VERSION` default and existing rows are unpinned (NULL), flipping the default re-resolves those rows — so the NEW default must reproduce today's exact per-endpoint paths byte-for-byte, and the older label becomes the only one that may legitimately differ.
+- incident.io: a resource having a v1 list endpoint doesn't make it usable — the v1 incidents list is deprecated and lacks the `sort_by` + `[gte]` filters incremental sync depends on, so keep such resources on v2 under every pin rather than downgrading them.

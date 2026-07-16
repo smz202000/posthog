@@ -60,3 +60,6 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Lightspeed Retail (X-Series): version is a URL **path segment** (`/api/<version>/…`), not a header — dispatch is threading `resolve_api_version(inputs.api_version)` from `source_for_pipeline` down to `_base_url`/`_build_url`; no per-version modules. Default the version arg to the new version so `validate_credentials` (an `/outlets` probe that runs pre-pin at creation) validates under it.
+- Lightspeed Retail: X-Series moved semver → date-based (YYYY-MM), min 12-month support per version, quarterly releases; legacy 2.0 is deprecated with **no published sunset date** (`sunset_at=None`) — deprecated endpoints fall forward / return 410 Gone. Don't invent a sunset date the vendor hasn't announced.
+- Auto-inferred-schema source (`has_managed_hogql_schema=False`) whose incremental cursor + pagination are unchanged across versions needs no data/schema transform — the migration is a plain idempotent `api_version` `UPDATE`, reverse `noop` (a blanket downgrade would clobber natively-created rows on the new default).

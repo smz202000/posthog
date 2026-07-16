@@ -58,6 +58,22 @@ export function LogsAlertDestinationTags({
     )
 }
 
+export function buildLogsAlertLastCheckedColumn(
+    defaultColumn: AlertsTableColumn<LogsAlertConfigurationApi>
+): AlertsTableColumn<LogsAlertConfigurationApi> {
+    return {
+        ...defaultColumn,
+        sorter: undefined,
+        defaultSortOrder: undefined,
+        render: (_, alert) =>
+            alert.last_checked_at ? (
+                <TZLabel time={alert.last_checked_at} />
+            ) : (
+                <span className="text-muted text-xs">Never</span>
+            ),
+    }
+}
+
 export function LogsAlertList(): JSX.Element {
     const { alerts, alertsLoading, resettingAlertIds, creatingAlert } = useValues(logsAlertingLogic)
     const {
@@ -93,7 +109,7 @@ export function LogsAlertList(): JSX.Element {
             title: 'Threshold',
             render: (_, alert) => <span className="text-muted text-xs">{formatThreshold(alert)}</span>,
         },
-        defaultColumns.lastChecked,
+        buildLogsAlertLastCheckedColumn(defaultColumns.lastChecked),
         {
             title: (
                 <Tooltip title="When this alert is next scheduled to be evaluated. Alerts of the same cadence are spread across the cadence period to smooth load on the database.">

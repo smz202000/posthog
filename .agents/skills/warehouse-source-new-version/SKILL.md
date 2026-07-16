@@ -60,3 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- GitHub: date-based versions live entirely in the `X-GitHub-Api-Version` header for the synced endpoints (compatible response shapes), so a new version is a single `api_version` param threaded source → `github_source` → `get_rows`/`_fan_out_get_rows` → `_get_headers`, not per-version modules. Give the header helper a legacy default constant so creation-time paths (credential validation, webhook management — no row pin) stay on the old version untouched.

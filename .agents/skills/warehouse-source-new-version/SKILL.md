@@ -60,3 +60,5 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Greenhouse: the version is a URL path segment (`/v1/...` → `/v3/...`). Replace the hardcoded `BASE_URL` constant with a `_base_url(api_version)` helper and thread the resolved version through `source_for_pipeline`/`get_rows` and the create-time `validate_credentials` probe.
+- Because the `0075` backfill stamped every existing source with an explicit version label, older rows are no longer NULL — a `default_version` flip alone won't move them, so the repin migration (deprecated-label → new-label, filtered for idempotency) is mandatory, not optional.

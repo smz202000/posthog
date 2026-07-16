@@ -2985,7 +2985,8 @@ class OrbitSourceConfig(config.Config):
 
 @config.config
 class OrcaSecuritySourceConfig(config.Config):
-    pass
+    api_token: str
+    region: Literal["global", "us", "eu"] = config.value(default="global")
 
 
 @config.config
@@ -3716,7 +3717,7 @@ class SemaphoreSourceConfig(config.Config):
 
 @config.config
 class SemgrepSourceConfig(config.Config):
-    pass
+    api_token: str
 
 
 @config.config

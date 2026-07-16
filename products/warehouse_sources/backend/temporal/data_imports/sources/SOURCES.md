@@ -190,6 +190,7 @@ the row lists both.
 | fireworks_ai              | HTTP                        | requests                                                        | ✅                          |
 | fleetio                   | HTTP                        | requests                                                        | ✅                          |
 | firehydrant               | HTTP                        | requests                                                        | ✅                          |
+| flagsmith                 | HTTP                        | requests                                                        | ✅                          |
 | flexmail                  | HTTP                        | requests                                                        | ✅                          |
 | float_app                 | HTTP                        | requests                                                        | ✅                          |
 | flowlu                    | HTTP                        | requests                                                        | ✅                          |
@@ -643,7 +644,6 @@ doesn't conflict with concurrent PRs.
 - fintoc
 - firebase
 - firebolt
-- flagsmith
 - flexmail
 - flexport
 - flowlu

@@ -67,8 +67,7 @@ export function LogsAlertList(): JSX.Element {
         createAlertAndOpen,
     } = useActions(logsAlertingLogic)
 
-    const columns: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
-        'name',
+    const columnsAfterName: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
         {
             title: 'Status',
             dataIndex: 'state',
@@ -86,7 +85,8 @@ export function LogsAlertList(): JSX.Element {
             title: 'Threshold',
             render: (_, alert) => <span className="text-muted text-xs">{formatThreshold(alert)}</span>,
         },
-        'lastChecked',
+    ]
+    const columnsAfterLastChecked: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
         {
             title: (
                 <Tooltip title="When this alert is next scheduled to be evaluated. Alerts of the same cadence are spread across the cadence period to smooth load on the database.">
@@ -150,23 +150,24 @@ export function LogsAlertList(): JSX.Element {
                 )
             },
         },
-        'createdBy',
-        {
-            title: 'Enabled',
-            dataIndex: 'enabled',
-            render: (_, alert) => (
-                <LemonSwitch
-                    checked={alert.enabled ?? true}
-                    onChange={() => toggleAlertEnabled(alert)}
-                    disabledReason={
-                        alert.state === LogsAlertConfigurationStateEnumApi.Broken
-                            ? 'Reset this alert to re-enable checks'
-                            : undefined
-                    }
-                    data-attr="logs-alert-row-toggle"
-                />
-            ),
-        },
+    ]
+    const enabledColumn: AlertsTableColumn<LogsAlertConfigurationApi> = {
+        title: 'Enabled',
+        dataIndex: 'enabled',
+        render: (_, alert) => (
+            <LemonSwitch
+                checked={alert.enabled ?? true}
+                onChange={() => toggleAlertEnabled(alert)}
+                disabledReason={
+                    alert.state === LogsAlertConfigurationStateEnumApi.Broken
+                        ? 'Reset this alert to re-enable checks'
+                        : undefined
+                }
+                data-attr="logs-alert-row-toggle"
+            />
+        ),
+    }
+    const columnsAfterEnabled: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
         {
             title: '',
             render: (_, alert) => (
@@ -254,8 +255,14 @@ export function LogsAlertList(): JSX.Element {
             </div>
             <AlertsTable
                 alerts={alerts}
-                columns={columns}
+                columnAdditions={{
+                    name: { after: columnsAfterName },
+                    lastChecked: { after: columnsAfterLastChecked },
+                    enabled: { after: columnsAfterEnabled },
+                }}
+                genericColumnOverrides={{ enabled: enabledColumn }}
                 getAlertUrl={(alert) => urls.logsAlertDetail(alert.id)}
+                hiddenGenericColumns={['lastNotified']}
                 loading={alertsLoading}
                 emptyState="No alerts configured yet."
                 size="small"

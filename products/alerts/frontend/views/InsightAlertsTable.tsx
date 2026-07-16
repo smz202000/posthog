@@ -21,12 +21,13 @@ interface InsightAlertsTableProps {
 }
 
 export function InsightAlertsTable({ alerts, isFiltering, loading, pagination }: InsightAlertsTableProps): JSX.Element {
-    const columns: AlertsTableColumn<AlertType>[] = [
+    const columnsBeforeName: AlertsTableColumn<AlertType>[] = [
         {
             key: 'id',
             width: 32,
         },
-        'name',
+    ]
+    const columnsAfterName: AlertsTableColumn<AlertType>[] = [
         {
             title: 'Status',
             dataIndex: 'state',
@@ -42,9 +43,8 @@ export function InsightAlertsTable({ alerts, isFiltering, loading, pagination }:
                 return <div className="whitespace-nowrap">{alertIntervalDisplayLabel(alert.calculation_interval)}</div>
             },
         },
-        'lastChecked',
-        'lastNotified',
-        'createdBy',
+    ]
+    const columnsAfterCreatedBy: AlertsTableColumn<AlertType>[] = [
         {
             title: 'Insight',
             dataIndex: 'insight',
@@ -62,13 +62,15 @@ export function InsightAlertsTable({ alerts, isFiltering, loading, pagination }:
                 )
             },
         },
-        'enabled',
     ]
 
     return (
         <AlertsTable
             alerts={alerts}
-            columns={columns}
+            columnAdditions={{
+                name: { before: columnsBeforeName, after: columnsAfterName },
+                createdBy: { after: columnsAfterCreatedBy },
+            }}
             genericColumnOverrides={{
                 createdBy: createdByColumn<AlertType>() as LemonTableColumn<AlertType, keyof AlertType | undefined>,
             }}

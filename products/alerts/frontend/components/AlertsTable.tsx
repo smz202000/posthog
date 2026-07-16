@@ -19,19 +19,23 @@ type AlertTableRecord = Record<string, any> & {
 }
 
 export type AlertsTableGenericColumn = 'name' | 'lastChecked' | 'lastNotified' | 'createdBy' | 'enabled'
-export type AlertsTableColumn<T extends AlertTableRecord> =
-    | AlertsTableGenericColumn
-    | LemonTableColumn<T, keyof T | undefined>
+export type AlertsTableColumn<T extends AlertTableRecord> = LemonTableColumn<T, keyof T | undefined>
+type AlertsTableColumnAdditions<T extends AlertTableRecord> = Partial<
+    Record<AlertsTableGenericColumn, { before?: AlertsTableColumn<T>[]; after?: AlertsTableColumn<T>[] }>
+>
+
+const genericColumns: AlertsTableGenericColumn[] = ['name', 'lastChecked', 'lastNotified', 'createdBy', 'enabled']
 
 export interface AlertsTableProps<T extends AlertTableRecord> extends Omit<
     LemonTableProps<T>,
     'columns' | 'dataSource' | 'emptyState' | 'noSortingCancellation' | 'nouns' | 'rowKey'
 > {
     alerts: T[]
-    columns: AlertsTableColumn<T>[]
+    columnAdditions?: AlertsTableColumnAdditions<T>
     emptyState?: ReactNode
     genericColumnOverrides?: Partial<Record<AlertsTableGenericColumn, LemonTableColumn<T, keyof T | undefined>>>
     getAlertUrl?: (alert: T) => string
+    hiddenGenericColumns?: AlertsTableGenericColumn[]
     isFiltering?: boolean
 }
 
@@ -115,10 +119,11 @@ function genericColumn<T extends AlertTableRecord>(
 
 export function AlertsTable<T extends AlertTableRecord>({
     alerts,
-    columns,
+    columnAdditions,
     emptyState,
     genericColumnOverrides,
     getAlertUrl,
+    hiddenGenericColumns = [],
     isFiltering = false,
     loadingSkeletonRows = 5,
     ...tableProps
@@ -128,12 +133,14 @@ export function AlertsTable<T extends AlertTableRecord>({
         resolvedEmptyState = <div className="py-8 text-center text-secondary">No alerts match your filters</div>
     }
 
-    const resolvedColumns = columns.map((column) => {
-        if (typeof column !== 'string') {
-            return column
+    const resolvedColumns = genericColumns.flatMap((column) => {
+        if (hiddenGenericColumns.includes(column)) {
+            return []
         }
 
-        return genericColumnOverrides?.[column] || genericColumn(column, getAlertUrl)
+        const additions = columnAdditions?.[column]
+        const resolvedColumn = genericColumnOverrides?.[column] || genericColumn(column, getAlertUrl)
+        return [...(additions?.before || []), resolvedColumn, ...(additions?.after || [])]
     })
 
     return (

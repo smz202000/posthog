@@ -144,6 +144,7 @@ the row lists both.
 | cursor                    | HTTP                        | requests                                                        | ✅                          |
 | customer_io               | HTTP + Webhook              | requests + `WebhookSourceManager`                               | ✅ (App API) / ➖ (webhook) |
 | customerly                | HTTP                        | requests                                                        | ✅                          |
+| dagster_cloud             | HTTP (GraphQL)              | requests                                                        | ✅                          |
 | datadog                   | HTTP                        | requests                                                        | ✅                          |
 | dbt                       | HTTP                        | requests                                                        | ✅                          |
 | decagon                   | HTTP                        | requests                                                        | ✅                          |
@@ -606,7 +607,6 @@ doesn't conflict with concurrent PRs.
 - criteo
 - cronitor
 - curve
-- dagster_cloud
 - databricks
 - datahub
 - datascope

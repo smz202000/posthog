@@ -60,3 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- BigQuery: no per-request version — the core REST API is stable at v2 and the google-cloud-bigquery client always talks to `/bigquery/v2/`, so a source declaring only the `UNVERSIONED_API_VERSION` placeholder was already on v2. Declare `v2` explicitly, map every supported label to a single REST segment via a small dict, and set `client._connection.API_VERSION` in `bigquery_client` (fail-soft on the private attr, like the existing `API_BASE_URL` read). Because both labels resolve to the same segment the default bump is a genuine no-op on the wire — the test asserts the resolved segment, not a behavior change.

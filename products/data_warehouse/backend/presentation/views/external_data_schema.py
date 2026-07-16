@@ -710,7 +710,7 @@ class ExternalDataSchemaSerializer(serializers.ModelSerializer):
         if sync_type == ExternalDataSchema.SyncType.XMIN:
             from posthog.models import Team
 
-            if instance.source.source_type != ExternalDataSourceType.POSTGRES:
+            if not SourceRegistry.get_source(ExternalDataSourceType(instance.source.source_type)).supports_xmin:
                 raise ValidationError("xmin replication is only available for Postgres sources.")
             team = Team.objects.get(id=self.context["team_id"])
             if not is_xmin_enabled_for_team(team):
@@ -1585,10 +1585,13 @@ class ExternalDataSchemaViewset(TeamAndOrgViewSetMixin, viewsets.ModelViewSet):
         # strings, so bool(...) would treat "False" as truthy. str_to_bool decodes both.
         source_cdc_enabled = str_to_bool(source.job_inputs.get("cdc_enabled"))
         cdc_available = schema.supports_cdc if is_cdc_enabled_for_team(self.team) and source_cdc_enabled else None
-        # xmin is Postgres-only AND flag-gated, mirroring the database_schema endpoint.
+        # xmin is source-capability-gated AND flag-gated, mirroring the database_schema endpoint.
         xmin_available = (
             schema.supports_xmin
-            if (source.source_type == ExternalDataSourceType.POSTGRES and is_xmin_enabled_for_team(self.team))
+            if (
+                SourceRegistry.get_source(ExternalDataSourceType(source.source_type)).supports_xmin
+                and is_xmin_enabled_for_team(self.team)
+            )
             else None
         )
 

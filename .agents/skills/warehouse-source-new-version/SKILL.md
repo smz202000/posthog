@@ -30,7 +30,7 @@ Use this skill when a vendor has released a new API version and an existing sour
    - Watch for version-dependent column hints/schemas: e.g. Stripe's `external_table_definitions` were built for specific versions. When adding a version whose response shapes differ, gate the canonical column hints to the versions they were built for and let newer versions auto-infer the schema from the data (a set of hint-compatible versions checked where hints are applied).
 4. **Keep old versions working**: do not delete or alter the request path for previously supported versions. Removing a version is an explicit future decision, not part of a version-add PR.
 5. **Tests**: extend the source's tests so both the old and new versions are exercised — at minimum that the version label reaches the client/request layer for each supported version (mock the boundary; parameterize over versions). The registry invariant test picks up declaration mistakes automatically.
-6. **One PR per source.** Conventional title: `feat(<dir>): support <vendor> API version <label>`.
+6. **One PR per source.** Conventional title: `feat(warehouse_sources): support <vendor> API version <label>` — the scope is always `warehouse_sources` (the product), never the source dir/vendor name.
 
 ## Deprecating a version
 
@@ -60,5 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
-- Omnisend: date-based versions are selected via an `Omnisend-Version` header while the REST base path stays `/v3`; gate the header on the legacy label (send it only for non-legacy versions) so the pinned legacy version's request is byte-for-byte unchanged. Test the header-builder as a pure function plus one `get_rows` case asserting the header reaches `make_tracked_session` — cheaper than driving the source.
-- Leave `validate_credentials` on the legacy path when the old version stays available; it runs at creation with no pin and changing it isn't needed for a plain version add.
+- Omnisend: a vendor "new version" can be a different API surface, not a header flip — `2026-03-15` lives at `https://api.omnisend.com/api` (not `/v3`), uses cursor pagination (`paging.cursors.after`/`hasMore`, no `paging.next`), renames PKs (contact `id`, not `contactID`), and drops `/orders` and `/carts` list endpoints in favor of events. Verify each declared resource still exists as a list endpoint with the same envelope before adding a version; if not, it's a source rewrite, so don't advertise it as supported or flip the default to it.

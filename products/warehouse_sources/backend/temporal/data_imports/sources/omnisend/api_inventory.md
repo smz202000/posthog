@@ -3,11 +3,10 @@
 Reference for the `omnisend` warehouse source. Verify against the live API before
 changing endpoint behavior — see the `implementing-warehouse-sources` skill.
 
-- **API version:** `v3` and `2026-03-15` are both supported; `2026-03-15` is the default
-  for new sources. The REST base path stays `https://api.omnisend.com/v3` for both — the
-  dated version is selected via the `Omnisend-Version` header, which we omit for `v3` so its
-  request path is unchanged. Both expose the resource-based list surface for
-  contacts/orders/products/carts/categories/campaigns.
+- **API version:** v3 (`https://api.omnisend.com/v3`). v3 is the stable resource-based
+  REST surface for contacts/orders/products/carts/categories/campaigns. (v5 / v2026-03-15
+  reshape several of these into event-centric endpoints; v3 is the right fit for a
+  list-and-sync warehouse source.)
 - **Auth:** API key in the `X-API-KEY` header.
 - **Pagination:** offset/limit with a fully-formed next-page URL at `paging.next`
   (`null` when exhausted). We follow `paging.next` directly, which makes pagination

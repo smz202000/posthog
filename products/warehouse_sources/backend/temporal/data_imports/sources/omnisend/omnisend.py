@@ -15,11 +15,6 @@ from products.warehouse_sources.backend.temporal.data_imports.sources.omnisend.s
 
 OMNISEND_BASE_URL = "https://api.omnisend.com/v3"
 
-# Legacy path-based version. Omnisend later moved to date-based versions selected via the
-# `Omnisend-Version` header; the REST base path stays `/v3` for both. We omit the header for
-# the legacy version so its request path is byte-for-byte identical to before header support.
-LEGACY_API_VERSION = "v3"
-
 # Omnisend allows up to 250 items per page; larger pages mean fewer requests against the
 # 400 req/min general rate limit.
 PAGE_SIZE = 250
@@ -38,14 +33,11 @@ class OmnisendResumeConfig:
     next_url: str
 
 
-def _get_headers(api_key: str, api_version: str = LEGACY_API_VERSION) -> dict[str, str]:
-    headers = {
+def _get_headers(api_key: str) -> dict[str, str]:
+    return {
         "X-API-KEY": api_key,
         "Accept": "application/json",
     }
-    if api_version != LEGACY_API_VERSION:
-        headers["Omnisend-Version"] = api_version
-    return headers
 
 
 def validate_credentials(api_key: str) -> tuple[bool, int | None]:
@@ -63,7 +55,6 @@ def get_rows(
     endpoint: str,
     logger: FilteringBoundLogger,
     resumable_source_manager: ResumableSourceManager[OmnisendResumeConfig],
-    api_version: str = LEGACY_API_VERSION,
 ) -> Iterator[list[dict[str, Any]]]:
     config = OMNISEND_ENDPOINTS[endpoint]
 
@@ -77,9 +68,7 @@ def get_rows(
     # One session reused across all pages (TCP/connection reuse). `tenacity` below is the sole
     # retry mechanism, so disable the transport's built-in urllib3 retries to avoid nested backoff.
     # `redact_values` masks the API key in logs and sample capture.
-    session = make_tracked_session(
-        headers=_get_headers(api_key, api_version), retry=Retry(total=0), redact_values=(api_key,)
-    )
+    session = make_tracked_session(headers=_get_headers(api_key), retry=Retry(total=0), redact_values=(api_key,))
 
     @retry(
         retry=retry_if_exception_type((OmnisendRetryableError, requests.ReadTimeout, requests.ConnectionError)),
@@ -127,7 +116,6 @@ def omnisend_source(
     endpoint: str,
     logger: FilteringBoundLogger,
     resumable_source_manager: ResumableSourceManager[OmnisendResumeConfig],
-    api_version: str = LEGACY_API_VERSION,
 ) -> SourceResponse:
     config = OMNISEND_ENDPOINTS[endpoint]
 
@@ -138,7 +126,6 @@ def omnisend_source(
             endpoint=endpoint,
             logger=logger,
             resumable_source_manager=resumable_source_manager,
-            api_version=api_version,
         ),
         primary_keys=[config.primary_key],
         partition_count=1,

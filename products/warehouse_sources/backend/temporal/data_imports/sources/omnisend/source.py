@@ -35,8 +35,8 @@ from products.warehouse_sources.backend.types import ExternalDataSourceType
 
 @SourceRegistry.register
 class OmnisendSource(ResumableSource[OmnisendSourceConfig, OmnisendResumeConfig]):
-    supported_versions = ("v3", "2026-03-15")
-    default_version = "2026-03-15"
+    supported_versions = ("v3",)
+    default_version = "v3"
     api_docs_url = "https://api-docs.omnisend.com"
 
     lists_tables_without_credentials = True  # static endpoint catalog — safe for public docs
@@ -134,5 +134,4 @@ You can create an API key in your [Omnisend account settings](https://app.omnise
             endpoint=inputs.schema_name,
             logger=inputs.logger,
             resumable_source_manager=resumable_source_manager,
-            api_version=self.resolve_api_version(inputs.api_version),
         )

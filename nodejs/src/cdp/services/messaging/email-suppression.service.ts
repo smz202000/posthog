@@ -244,6 +244,10 @@ export class EmailSuppressionService {
             return
         }
 
+        // Fail closed on a missing delivery timestamp: without one we can't prove the delivery is
+        // newer than the last bounce, so leave the counter alone rather than risk erasing a fresh
+        // bounce. In practice the SES Delivery schema requires a timestamp, so this branch only
+        // guards against a caller that forgets to pass it.
         const query = `
             UPDATE posthog_messagesuppression
             SET transient_bounce_count = 0, updated_at = NOW()
@@ -252,7 +256,7 @@ export class EmailSuppressionService {
               AND source <> 'MANUAL'
               AND suppressed = false
               AND transient_bounce_count > 0
-              AND (last_bounce_at IS NULL OR $3::timestamptz IS NULL OR last_bounce_at < $3::timestamptz)
+              AND (last_bounce_at IS NULL OR ($3::timestamptz IS NOT NULL AND last_bounce_at < $3::timestamptz))
         `
         try {
             await this.postgres.query(

@@ -1,3 +1,5 @@
+from django.db.models import F
+from django.db.models.functions import Coalesce, Now
 from django.utils import timezone
 
 from drf_spectacular.utils import extend_schema
@@ -107,13 +109,18 @@ class MessageSuppressionViewSet(TeamAndOrgViewSetMixin, viewsets.ViewSet):
 
         if not created:
             # Re-suppress (and un-delete) an existing row, e.g. one that had only been counting
-            # bounces or was previously removed.
-            suppression.suppressed = True
-            suppression.suppressed_at = suppression.suppressed_at or timezone.now()
-            suppression.source = SuppressionSource.MANUAL
-            suppression.reason = "Manually added"
-            suppression.deleted = False
-            suppression.save(update_fields=["suppressed", "suppressed_at", "source", "reason", "deleted", "updated_at"])
+            # bounces or was previously removed. Coalesce lets Postgres preserve an existing
+            # suppressed_at atomically, so two concurrent add_suppression calls can't both compute
+            # their own now() and overwrite each other.
+            MessageSuppression.objects.for_team(self.team_id).filter(pk=suppression.pk).update(
+                suppressed=True,
+                suppressed_at=Coalesce(F("suppressed_at"), Now()),
+                source=SuppressionSource.MANUAL,
+                reason="Manually added",
+                deleted=False,
+                updated_at=Now(),
+            )
+            suppression.refresh_from_db()
 
         response_status = status.HTTP_201_CREATED if created else status.HTTP_200_OK
         return Response(MessageSuppressionSerializer(suppression).data, status=response_status)

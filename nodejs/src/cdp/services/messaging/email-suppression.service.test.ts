@@ -100,11 +100,26 @@ describe('EmailSuppressionService', () => {
             await svc.recordTransientBounces(team.id, [email], 'temp')
             expect((await readRow(email))?.transient_bounce_count).toBe(2)
 
-            await svc.recordDeliveries(team.id, [email])
+            // Newer delivery timestamp than the just-recorded bounces.
+            const newerTimestamp = new Date(Date.now() + 60 * 1000).toISOString()
+            await svc.recordDeliveries(team.id, [email], newerTimestamp)
             expect(await readRow(email)).toMatchObject({
                 transient_bounce_count: 0,
                 suppressed: false,
             })
+        })
+
+        it('does not reset the counter when the delivery is missing a timestamp (fail closed)', async () => {
+            // Guards against a caller that forgets to pass the delivery timestamp — without one we
+            // can't prove the delivery is newer than the last bounce, so we leave the counter alone.
+            const svc = new EmailSuppressionService(hub.postgres)
+            const email = 'no-timestamp@example.com'
+
+            await svc.recordTransientBounces(team.id, [email], 'temp')
+            expect((await readRow(email))?.transient_bounce_count).toBe(1)
+
+            await svc.recordDeliveries(team.id, [email])
+            expect((await readRow(email))?.transient_bounce_count).toBe(1)
         })
 
         it('ignores a delivery older than the last bounce (out-of-order events)', async () => {

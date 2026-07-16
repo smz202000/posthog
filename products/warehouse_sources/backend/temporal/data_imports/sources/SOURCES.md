@@ -98,6 +98,7 @@ the row lists both.
 | callrail                  | HTTP                        | requests                                                        | ✅                          |
 | campaign_monitor          | HTTP                        | requests                                                        | ✅                          |
 | campayn                   | HTTP                        | requests                                                        | ✅                          |
+| campfire                  | HTTP                        | requests                                                        | ✅                          |
 | canny                     | HTTP                        | requests                                                        | ✅                          |
 | capsule_crm               | HTTP                        | requests                                                        | ✅                          |
 | care_quality_commission   | HTTP                        | requests                                                        | ✅                          |
@@ -570,7 +571,6 @@ doesn't conflict with concurrent PRs.
 - browse_ai
 - cal_com
 - campaign_manager_360
-- campfire
 - captain_data
 - cart_com
 - castor_edc

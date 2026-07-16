@@ -10,7 +10,7 @@ import { useAvailableFeatures } from '~/mocks/features'
 import { useMocks } from '~/mocks/jest'
 import { NodeKind } from '~/queries/schema/schema-general'
 import { initKeaTests } from '~/test/init'
-import { InsightShortId, QueryBasedInsightModel } from '~/types'
+import { DashboardType, InsightShortId, QueryBasedInsightModel } from '~/types'
 import { AvailableFeature } from '~/types'
 
 import { sharingLogic } from './sharingLogic'
@@ -131,6 +131,24 @@ describe('SharingModal (dashboard)', () => {
 
         expect(await screen.findByText('Auto refresh shared dashboard')).toBeInTheDocument()
         expect(await screen.findByText('30 minutes')).toBeInTheDocument()
+    })
+
+    it('disables auto refresh when the dashboard range is longer than 30 days', async () => {
+        const dashboard = {
+            id: dashboardId,
+            name: 'Expensive dashboard',
+            filters: { date_from: '-90d' },
+            tiles: [],
+        } as DashboardType<QueryBasedInsightModel>
+
+        render(<DashboardSharingModalWrapper extraProps={{ dashboard }} />)
+
+        expect(
+            await screen.findByText(
+                'Auto refresh is disabled because the dashboard date range is Last 90 days, which is longer than 30 days.'
+            )
+        ).toBeInTheDocument()
+        expect(screen.getByRole('switch', { name: 'Auto refresh shared dashboard' })).toBeDisabled()
     })
 
     it('calls onSharingEnabledChange after the dashboard sharing switch update succeeds', async () => {

@@ -111,6 +111,38 @@ def test_shared_image_alternative(url: str, expected_url: str) -> None:
     assert shared_url_as_png(url) == expected_url
 
 
+class TestSharedDashboardAutoRefresh(APIBaseTest):
+    @staticmethod
+    def _parse_exported_data(html: str) -> dict:
+        start_marker = '<script id="posthog-exported-data" type="application/json">'
+        start = html.index(start_marker) + len(start_marker)
+        end = html.index("</script>", start)
+        outer = json.loads(html[start:end])
+        return json.loads(outer) if isinstance(outer, str) else outer
+
+    @parameterized.expand(
+        [
+            ("-30d", 5400),
+            ("-31d", 0),
+        ]
+    )
+    @freeze_time("2026-07-16 12:00:00")
+    @mock_exporter_template
+    def test_shared_dashboard_suppresses_expensive_auto_refresh(self, date_from: str, expected_interval: int) -> None:
+        dashboard = Dashboard.objects.create(team=self.team, name="Dashboard", filters={"date_from": date_from})
+        config = SharingConfiguration.objects.create(
+            team=self.team,
+            dashboard=dashboard,
+            enabled=True,
+            auto_refresh_interval=5400,
+        )
+
+        response = self.client.get(f"/shared/{config.access_token}")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert self._parse_exported_data(response.content.decode())["dashboardAutoRefreshInterval"] == expected_interval
+
+
 class TestSharing(APIBaseTest):
     dashboard: Dashboard = None  # type: ignore
     insight: Insight = None  # type: ignore

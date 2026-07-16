@@ -30,8 +30,13 @@ import { featureFlagLogic } from 'lib/logic/featureFlagLogic'
 import { preflightLogic } from 'lib/logic/preflightLogic'
 import { accessLevelSatisfied } from 'lib/utils/accessControlUtils'
 import { copyToClipboard } from 'lib/utils/copyToClipboard'
+import {
+    dashboardAutoRefreshRestrictionText,
+    getDashboardAutoRefreshRestriction,
+} from 'scenes/dashboard/dashboardAutoRefresh'
 import { insightVizDataLogic } from 'scenes/insights/insightVizDataLogic'
 import { projectLogic } from 'scenes/projectLogic'
+import { teamLogic } from 'scenes/teamLogic'
 import { urls } from 'scenes/urls'
 
 import { AccessControlPopoutCTA } from '~/layout/navigation-3000/sidepanel/panels/access_control/AccessControlPopoutCTA'
@@ -43,6 +48,7 @@ import {
     AccessControlLevel,
     AccessControlResourceType,
     AvailableFeature,
+    DashboardType,
     InsightShortId,
     QueryBasedInsightModel,
 } from '~/types'
@@ -78,6 +84,7 @@ export const SHARING_MODAL_WIDTH = 600
 
 export interface SharingModalBaseProps {
     dashboardId?: number
+    dashboard?: DashboardType<QueryBasedInsightModel>
     insightShortId?: InsightShortId
     insight?: Partial<QueryBasedInsightModel>
     cachedResults?: AnyResponseType
@@ -104,6 +111,7 @@ export interface SharingModalProps extends SharingModalBaseProps {
 
 export function SharingModalContent({
     dashboardId,
+    dashboard,
     insightShortId,
     insight,
     cachedResults,
@@ -135,6 +143,7 @@ export function SharingModalContent({
         shareLink,
         sharingAllowed,
     } = useValues(sharingLogic(logicProps))
+    const { currentTeam } = useValues(teamLogic)
     const { setIsEnabled, setPasswordRequired, setAutoRefreshInterval, togglePreview, setSharingSettingsValue } =
         useActions(sharingLogic(logicProps))
     const { guardAvailableFeature } = useValues(upgradeModalLogic)
@@ -187,6 +196,7 @@ export function SharingModalContent({
     const hasEditAccess = userAccessLevel
         ? accessLevelSatisfied(resource as AccessControlResourceType, userAccessLevel, AccessControlLevel.Editor)
         : true
+    const autoRefreshRestriction = getDashboardAutoRefreshRestriction(dashboard, currentTeam?.timezone ?? 'UTC')
 
     useEffect(() => {
         setIframeLoaded(false)
@@ -294,13 +304,19 @@ export function SharingModalContent({
                                         </div>
                                     )}
                                     {dashboardId && (
-                                        <div className="LemonSwitch LemonSwitch--medium LemonSwitch--bordered LemonSwitch--full-width flex-col py-1.5">
+                                        <div className="LemonSwitch LemonSwitch--medium LemonSwitch--bordered LemonSwitch--full-width flex-col gap-2 py-1.5">
+                                            {autoRefreshRestriction && (
+                                                <LemonBanner type="warning">
+                                                    {dashboardAutoRefreshRestrictionText(autoRefreshRestriction)}
+                                                </LemonBanner>
+                                            )}
                                             <LemonSwitch
                                                 className="px-0"
                                                 fullWidth
                                                 label="Auto refresh shared dashboard"
                                                 checked={sharingConfiguration.auto_refresh_interval !== 0}
                                                 loading={setAutoRefreshIntervalLoading}
+                                                disabled={Boolean(autoRefreshRestriction)}
                                                 onChange={(enabled) => setAutoRefreshInterval(enabled ? 5400 : 0)}
                                             />
                                             {sharingConfiguration.auto_refresh_interval !== 0 && (
@@ -312,7 +328,10 @@ export function SharingModalContent({
                                                         id="sharing-auto-refresh-interval"
                                                         value={sharingConfiguration.auto_refresh_interval ?? 1800}
                                                         onSelect={setAutoRefreshInterval}
-                                                        disabled={setAutoRefreshIntervalLoading}
+                                                        disabled={
+                                                            setAutoRefreshIntervalLoading ||
+                                                            Boolean(autoRefreshRestriction)
+                                                        }
                                                         options={[
                                                             { value: 1800, label: '30 minutes' },
                                                             { value: 3600, label: '1 hour' },

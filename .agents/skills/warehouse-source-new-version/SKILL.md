@@ -60,3 +60,5 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Simplecast: current API (api.simplecast.com + Bearer) *is* "2.0"; the pre-existing `UNVERSIONED_API_VERSION` ("v1") pin already hit it, so adding "2.0" as the new default is a pure declaration + threading change with no wire divergence. Vendor announced header-based version selection but hasn't shipped it — forwarded the resolved version as an `X-Api-Version` header only for non-legacy pins (unknown header is ignored today, honored later), keeping the legacy path byte-for-byte identical.
+- `parameterized.expand` can't inject pytest's `monkeypatch` fixture — use `@pytest.mark.parametrize` for any version-dispatch test that patches the request boundary.

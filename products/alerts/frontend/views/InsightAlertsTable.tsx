@@ -9,8 +9,8 @@ import { AlertState } from '~/queries/schema/schema-general'
 
 import {
     AlertsTable,
-    AlertsTableColumnOrder,
-    AlertsTableColumns,
+    AlertsTableColumn,
+    createDefaultAlertsTableColumns,
 } from 'products/alerts/frontend/components/AlertsTable'
 import { alertIntervalDisplayLabel } from 'products/alerts/frontend/logic/alertIntervalHelpers'
 
@@ -25,19 +25,21 @@ interface InsightAlertsTableProps {
 }
 
 export function InsightAlertsTable({ alerts, isFiltering, loading, pagination }: InsightAlertsTableProps): JSX.Element {
-    const columns = {
-        leading: {
+    const defaultColumns = createDefaultAlertsTableColumns<AlertType>((alert) => urls.alert(alert.id))
+    const columns: AlertsTableColumn<AlertType>[] = [
+        {
             key: 'id',
             width: 32,
         },
-        status: {
+        defaultColumns.name,
+        {
             title: 'Status',
             dataIndex: 'state',
             render: function renderStateIndicator(_, alert) {
                 return alert.enabled ? <AlertStateIndicator alert={alert} /> : null
             },
         },
-        interval: {
+        {
             title: 'Interval',
             dataIndex: 'calculation_interval',
             key: 'calculation_interval',
@@ -45,8 +47,10 @@ export function InsightAlertsTable({ alerts, isFiltering, loading, pagination }:
                 return <div className="whitespace-nowrap">{alertIntervalDisplayLabel(alert.calculation_interval)}</div>
             },
         },
-        createdBy: createdByColumn<AlertType>() as LemonTableColumn<AlertType, keyof AlertType | undefined>,
-        insight: {
+        defaultColumns.lastChecked,
+        defaultColumns.lastNotified,
+        createdByColumn<AlertType>() as LemonTableColumn<AlertType, keyof AlertType | undefined>,
+        {
             title: 'Insight',
             dataIndex: 'insight',
             key: 'insight',
@@ -63,25 +67,13 @@ export function InsightAlertsTable({ alerts, isFiltering, loading, pagination }:
                 )
             },
         },
-    } satisfies AlertsTableColumns<AlertType>
-    const columnOrder = [
-        'leading',
-        'name',
-        'status',
-        'interval',
-        'lastChecked',
-        'lastNotified',
-        'createdBy',
-        'insight',
-        'enabled',
-    ] satisfies AlertsTableColumnOrder<typeof columns>
+        defaultColumns.enabled,
+    ]
 
     return (
         <AlertsTable
             alerts={alerts}
-            columnOrder={columnOrder}
             columns={columns}
-            getAlertUrl={(alert) => urls.alert(alert.id)}
             isFiltering={isFiltering}
             loading={loading}
             pagination={pagination}

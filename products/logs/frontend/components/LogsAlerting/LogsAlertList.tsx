@@ -15,8 +15,8 @@ import IconWebhook from 'public/services/webhook.svg'
 
 import {
     AlertsTable,
-    AlertsTableColumnOrder,
-    AlertsTableColumns,
+    AlertsTableColumn,
+    createDefaultAlertsTableColumns,
 } from 'products/alerts/frontend/components/AlertsTable'
 import {
     NotificationDestinationTypeEnumApi,
@@ -71,8 +71,12 @@ export function LogsAlertList(): JSX.Element {
         createAlertAndOpen,
     } = useActions(logsAlertingLogic)
 
-    const columns = {
-        status: {
+    const defaultColumns = createDefaultAlertsTableColumns<LogsAlertConfigurationApi>((alert) =>
+        urls.logsAlertDetail(alert.id)
+    )
+    const columns: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
+        defaultColumns.name,
+        {
             title: 'Status',
             dataIndex: 'state',
             render: (_, alert) => (
@@ -85,11 +89,12 @@ export function LogsAlertList(): JSX.Element {
                 />
             ),
         },
-        threshold: {
+        {
             title: 'Threshold',
             render: (_, alert) => <span className="text-muted text-xs">{formatThreshold(alert)}</span>,
         },
-        nextCheck: {
+        defaultColumns.lastChecked,
+        {
             title: (
                 <Tooltip title="When this alert is next scheduled to be evaluated. Alerts of the same cadence are spread across the cadence period to smooth load on the database.">
                     <span className="cursor-help">Next check</span>
@@ -103,7 +108,7 @@ export function LogsAlertList(): JSX.Element {
                     <span className="text-muted text-xs">Pending</span>
                 ),
         },
-        timeline: {
+        {
             title: (
                 <Tooltip title="Alert state over the last 24 hours. Green = OK, red = firing, orange = resolving/errored, grey = snoozed or disabled. Hover to see the state at a point in time.">
                     <span className="cursor-help">Last 24h</span>
@@ -111,7 +116,7 @@ export function LogsAlertList(): JSX.Element {
             ),
             render: (_, alert) => <LogsAlertStateTimeline timeline={alert.state_timeline} className="h-6 w-72" />,
         },
-        notifications: {
+        {
             title: 'Notifications',
             dataIndex: 'destination_types',
             render: (_, alert) => {
@@ -152,7 +157,9 @@ export function LogsAlertList(): JSX.Element {
                 )
             },
         },
-        enabled: {
+        defaultColumns.createdBy,
+        {
+            ...defaultColumns.enabled,
             title: 'Enabled',
             dataIndex: 'enabled',
             render: (_, alert) => (
@@ -168,7 +175,7 @@ export function LogsAlertList(): JSX.Element {
                 />
             ),
         },
-        actions: {
+        {
             title: '',
             render: (_, alert) => (
                 <More
@@ -234,19 +241,7 @@ export function LogsAlertList(): JSX.Element {
                 />
             ),
         },
-    } satisfies AlertsTableColumns<LogsAlertConfigurationApi>
-    const columnOrder = [
-        'name',
-        'status',
-        'threshold',
-        'lastChecked',
-        'nextCheck',
-        'timeline',
-        'notifications',
-        'createdBy',
-        'enabled',
-        'actions',
-    ] satisfies AlertsTableColumnOrder<typeof columns>
+    ]
 
     if (alertsLoading && alerts.length === 0) {
         return <SpinnerOverlay />
@@ -267,9 +262,7 @@ export function LogsAlertList(): JSX.Element {
             </div>
             <AlertsTable
                 alerts={alerts}
-                columnOrder={columnOrder}
                 columns={columns}
-                getAlertUrl={(alert) => urls.logsAlertDetail(alert.id)}
                 loading={alertsLoading}
                 emptyState="No alerts configured yet."
                 size="small"

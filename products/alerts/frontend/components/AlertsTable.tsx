@@ -20,18 +20,18 @@ type AlertTableRecord = Record<string, any> & {
 
 export type AlertsTableGenericColumn = 'name' | 'lastChecked' | 'lastNotified' | 'createdBy' | 'enabled'
 export type AlertsTableColumn<T extends AlertTableRecord> = LemonTableColumn<T, keyof T | undefined>
-export type AlertsTableColumns<T extends AlertTableRecord> = Record<string, AlertsTableColumn<T>>
-export type AlertsTableColumnOrder<TColumns> = (AlertsTableGenericColumn | Extract<keyof TColumns, string>)[]
+export type AlertsTableDefaultColumns<T extends AlertTableRecord> = Record<
+    AlertsTableGenericColumn,
+    AlertsTableColumn<T>
+>
 
-export interface AlertsTableProps<T extends AlertTableRecord, TColumns extends AlertsTableColumns<T>> extends Omit<
+export interface AlertsTableProps<T extends AlertTableRecord> extends Omit<
     LemonTableProps<T>,
     'columns' | 'dataSource' | 'emptyState' | 'noSortingCancellation' | 'nouns' | 'rowKey'
 > {
     alerts: T[]
-    columnOrder: AlertsTableColumnOrder<TColumns>
-    columns: TColumns
+    columns: AlertsTableColumn<T>[]
     emptyState?: ReactNode
-    getAlertUrl?: (alert: T) => string
     isFiltering?: boolean
 }
 
@@ -113,42 +113,35 @@ function genericColumn<T extends AlertTableRecord>(
     }
 }
 
-export function AlertsTable<T extends AlertTableRecord, TColumns extends AlertsTableColumns<T>>({
-    alerts,
-    columnOrder,
-    columns,
-    emptyState,
-    getAlertUrl,
-    isFiltering = false,
-    loadingSkeletonRows = 5,
-    ...tableProps
-}: AlertsTableProps<T, TColumns>): JSX.Element {
-    let resolvedEmptyState = emptyState
-    if (resolvedEmptyState === undefined && isFiltering) {
-        resolvedEmptyState = <div className="py-8 text-center text-secondary">No alerts match your filters</div>
-    }
-
-    const defaultColumns: Record<AlertsTableGenericColumn, AlertsTableColumn<T>> = {
+export function createDefaultAlertsTableColumns<T extends AlertTableRecord>(
+    getAlertUrl?: (alert: T) => string
+): AlertsTableDefaultColumns<T> {
+    return {
         name: genericColumn('name', getAlertUrl),
         lastChecked: genericColumn('lastChecked', getAlertUrl),
         lastNotified: genericColumn('lastNotified', getAlertUrl),
         createdBy: genericColumn('createdBy', getAlertUrl),
         enabled: genericColumn('enabled', getAlertUrl),
     }
-    const customColumns: Partial<Record<string, AlertsTableColumn<T>>> = columns
-    const resolvedColumns = columnOrder.map((columnKey) => {
-        const customColumn = customColumns[columnKey]
-        if (customColumn) {
-            return customColumn
-        }
+}
 
-        return defaultColumns[columnKey as AlertsTableGenericColumn]
-    })
+export function AlertsTable<T extends AlertTableRecord>({
+    alerts,
+    columns,
+    emptyState,
+    isFiltering = false,
+    loadingSkeletonRows = 5,
+    ...tableProps
+}: AlertsTableProps<T>): JSX.Element {
+    let resolvedEmptyState = emptyState
+    if (resolvedEmptyState === undefined && isFiltering) {
+        resolvedEmptyState = <div className="py-8 text-center text-secondary">No alerts match your filters</div>
+    }
 
     return (
         <LemonTable
             {...tableProps}
-            columns={resolvedColumns}
+            columns={columns}
             dataSource={alerts}
             emptyState={resolvedEmptyState}
             loadingSkeletonRows={loadingSkeletonRows}

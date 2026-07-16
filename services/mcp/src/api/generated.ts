@@ -10022,6 +10022,24 @@ export namespace Schemas {
       is_bot: boolean;
     }
 
+    /**
+     * * `0` - Disabled
+     * * `1800` - 30 minutes
+     * * `3600` - 1 hour
+     * * `5400` - 1.5 hours
+     * * `21600` - 6 hours
+     */
+    export type AutoRefreshIntervalEnum = typeof AutoRefreshIntervalEnum[keyof typeof AutoRefreshIntervalEnum];
+
+
+    export const AutoRefreshIntervalEnum = {
+      Number0: 0,
+      Number1800: 1800,
+      Number3600: 3600,
+      Number5400: 5400,
+      Number21600: 21600,
+    } as const;
+
     export type AutocompleteCompletionItemKind = typeof AutocompleteCompletionItemKind[keyof typeof AutocompleteCompletionItemKind];
 
 
@@ -55929,6 +55947,14 @@ export namespace Schemas {
       readonly access_token: string | null;
       settings?: unknown;
       password_required?: boolean;
+      /** Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.
+       *
+       * * `0` - Disabled
+       * * `1800` - 30 minutes
+       * * `3600` - 1 hour
+       * * `5400` - 1.5 hours
+       * * `21600` - 6 hours */
+      auto_refresh_interval?: AutoRefreshIntervalEnum | null;
       readonly share_passwords: readonly SharePassword[];
     }
 

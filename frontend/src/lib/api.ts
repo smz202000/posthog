@@ -39,7 +39,11 @@ import { SessionSummaryContent } from 'scenes/session-recordings/player/player-m
 import { LINK_PAGE_SIZE, SURVEY_PAGE_SIZE } from 'scenes/surveys/constants'
 
 import { getCurrentExporterData, isSharedView } from '~/exporter/exporterViewLogic'
-import { OrganizationOAuthApplicationApi, ProjectSecretAPIKeyApi } from '~/generated/core/api.schemas'
+import {
+    OrganizationOAuthApplicationApi,
+    ProjectSecretAPIKeyApi,
+    SharingConfigurationApi,
+} from '~/generated/core/api.schemas'
 import { Variable } from '~/queries/nodes/DataVisualization/types'
 import {
     AggregatedSpanRow,
@@ -213,7 +217,6 @@ import {
     SessionRecordingType,
     SessionRecordingUpdateType,
     SessionSummaryResponse,
-    SharingConfigurationType,
     SlackChannelType,
     SubscriptionType,
     Survey,
@@ -3784,7 +3787,7 @@ const api = {
             insightId?: QueryBasedInsightModel['id']
             recordingId?: SessionRecordingType['id']
             notebookShortId?: NotebookType['short_id']
-        }): Promise<SharingConfigurationType | null> {
+        }): Promise<SharingConfigurationApi | null> {
             return dashboardId
                 ? new ApiRequest().dashboardSharing(dashboardId).get()
                 : insightId
@@ -3808,8 +3811,8 @@ const api = {
                 recordingId?: SessionRecordingType['id']
                 notebookShortId?: NotebookType['short_id']
             },
-            data: Partial<SharingConfigurationType>
-        ): Promise<SharingConfigurationType | null> {
+            data: Partial<SharingConfigurationApi>
+        ): Promise<SharingConfigurationApi | null> {
             return dashboardId
                 ? new ApiRequest().dashboardSharing(dashboardId).update({ data })
                 : insightId
@@ -3834,7 +3837,7 @@ const api = {
                 notebookShortId?: NotebookType['short_id']
             },
             data: { raw_password?: string; note?: string }
-        ): Promise<SharingConfigurationType | null> {
+        ): Promise<SharingConfigurationApi | null> {
             return dashboardId
                 ? new ApiRequest().dashboardSharingPasswords(dashboardId).create({ data })
                 : insightId

@@ -5542,6 +5542,7 @@ export interface SharingConfigurationType {
     access_token: string
     created_at: string
     password_required: boolean
+    auto_refresh_interval?: number | null
     settings?: SharingConfigurationSettings
     share_passwords?: SharePasswordType[]
 }

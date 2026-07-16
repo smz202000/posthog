@@ -128,15 +128,15 @@ export function SharingModalContent({
         accessControlAvailable,
         sharingConfiguration,
         sharingConfigurationLoading,
+        setAutoRefreshIntervalLoading,
         showPreview,
         embedCode,
         iframeProperties,
         shareLink,
         sharingAllowed,
     } = useValues(sharingLogic(logicProps))
-    const { setIsEnabled, setPasswordRequired, togglePreview, setSharingSettingsValue } = useActions(
-        sharingLogic(logicProps)
-    )
+    const { setIsEnabled, setPasswordRequired, setAutoRefreshInterval, togglePreview, setSharingSettingsValue } =
+        useActions(sharingLogic(logicProps))
     const { guardAvailableFeature } = useValues(upgradeModalLogic)
     const { preflight } = useValues(preflightLogic)
     const siteUrl = preflight?.site_url || window.location.origin
@@ -288,6 +288,37 @@ export function SharingModalContent({
                                                         insightId={insight?.id}
                                                         recordingId={recordingId}
                                                         notebookShortId={notebookShortId}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {dashboardId && (
+                                        <div className="LemonSwitch LemonSwitch--medium LemonSwitch--bordered LemonSwitch--full-width flex-col py-1.5">
+                                            <LemonSwitch
+                                                className="px-0"
+                                                fullWidth
+                                                label="Auto refresh shared dashboard"
+                                                checked={sharingConfiguration.auto_refresh_interval !== 0}
+                                                loading={setAutoRefreshIntervalLoading}
+                                                onChange={(enabled) => setAutoRefreshInterval(enabled ? 5400 : 0)}
+                                            />
+                                            {sharingConfiguration.auto_refresh_interval !== 0 && (
+                                                <div className="mt-2 flex w-full items-center justify-between gap-2">
+                                                    <LemonLabel htmlFor="sharing-auto-refresh-interval">
+                                                        Refresh interval
+                                                    </LemonLabel>
+                                                    <LemonSelect
+                                                        id="sharing-auto-refresh-interval"
+                                                        value={sharingConfiguration.auto_refresh_interval ?? 1800}
+                                                        onSelect={setAutoRefreshInterval}
+                                                        disabled={setAutoRefreshIntervalLoading}
+                                                        options={[
+                                                            { value: 1800, label: '30 minutes' },
+                                                            { value: 3600, label: '1 hour' },
+                                                            { value: 5400, label: '1.5 hours' },
+                                                            { value: 21600, label: '6 hours' },
+                                                        ]}
                                                     />
                                                 </div>
                                             )}

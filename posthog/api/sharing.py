@@ -316,7 +316,15 @@ class SharingConfigurationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SharingConfiguration
-        fields = ["created_at", "enabled", "access_token", "settings", "password_required", "share_passwords"]
+        fields = [
+            "created_at",
+            "enabled",
+            "access_token",
+            "settings",
+            "password_required",
+            "auto_refresh_interval",
+            "share_passwords",
+        ]
         read_only_fields = ["created_at", "access_token", "share_passwords"]
 
     def validate_settings(self, value: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
@@ -429,6 +437,8 @@ class SharingConfigurationViewSet(TeamAndOrgViewSetMixin, mixins.ListModelMixin,
         )
         if instance is None:
             instance = SharingConfiguration(**config_kwargs)
+            if dashboard:
+                instance.auto_refresh_interval = 0
 
         if dashboard:
             # Ensure the legacy dashboard fields are in sync with the sharing configuration
@@ -1067,6 +1077,8 @@ class SharingViewerPageViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSe
                 dashboard_data = DashboardSerializer(resource.dashboard, context=context).data
                 # We don't want the dashboard to be accidentally loaded via the shared endpoint
                 exported_data.update({"dashboard": dashboard_data})
+            if isinstance(resource, SharingConfiguration):
+                exported_data["dashboardAutoRefreshInterval"] = resource.auto_refresh_interval
             exported_data.update({"themes": get_themes_for_team(resource.team)})
             dashboard_insights = [
                 tile.insight

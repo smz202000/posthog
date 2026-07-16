@@ -14,9 +14,11 @@ import { ExportType, ExportedData } from '../types'
 function SharedDashboardAutoRefresh({
     dashboardId,
     dashboard,
+    interval,
 }: {
     dashboardId: number
     dashboard: DashboardType<QueryBasedInsightModel>
+    interval: number
 }): JSX.Element | null {
     // Pass `dashboard` so dashboardLogic.afterMount uses the cached branch
     // (loadDashboardSuccess) instead of firing an unauthenticated loadDashboard.
@@ -44,8 +46,8 @@ function SharedDashboardAutoRefresh({
     usePageVisibilityCb(onVisibilityChange)
 
     useEffect(() => {
-        setAutoRefresh(true, AUTO_REFRESH_INITIAL_INTERVAL_SECONDS)
-    }, [setAutoRefresh])
+        setAutoRefresh(true, interval)
+    }, [interval, setAutoRefresh])
 
     return null
 }
@@ -54,16 +56,23 @@ export default function ExporterDashboardScene({
     dashboard,
     type,
     themes,
+    dashboardAutoRefreshInterval,
 }: {
     dashboard: NonNullable<ExportedData['dashboard']>
     type: ExportedData['type']
     themes: ExportedData['themes']
+    dashboardAutoRefreshInterval: ExportedData['dashboardAutoRefreshInterval']
 }): JSX.Element {
     const queryBasedDashboard = useMemo(() => getQueryBasedDashboard(dashboard)!, [dashboard])
+    const autoRefreshInterval = dashboardAutoRefreshInterval ?? AUTO_REFRESH_INITIAL_INTERVAL_SECONDS
     return (
         <>
-            {type !== ExportType.Image && (
-                <SharedDashboardAutoRefresh dashboardId={dashboard.id} dashboard={queryBasedDashboard} />
+            {type !== ExportType.Image && autoRefreshInterval > 0 && (
+                <SharedDashboardAutoRefresh
+                    dashboardId={dashboard.id}
+                    dashboard={queryBasedDashboard}
+                    interval={autoRefreshInterval}
+                />
             )}
             <Dashboard
                 id={String(dashboard.id)}

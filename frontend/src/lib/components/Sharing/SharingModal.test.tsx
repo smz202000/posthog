@@ -25,15 +25,18 @@ const defaultInsightId = 456
 function mockDashboardSharingConfiguration({
     enabled = true,
     passwordRequired = false,
+    autoRefreshInterval = 0,
 }: {
     enabled?: boolean
     passwordRequired?: boolean
+    autoRefreshInterval?: number | null
 }): Record<string, any> {
     const sharingConfiguration = {
         created_at: createdAt,
         enabled,
         access_token: accessToken,
         password_required: passwordRequired,
+        auto_refresh_interval: autoRefreshInterval,
     }
 
     return {
@@ -81,14 +84,20 @@ describe('SharingModal (dashboard)', () => {
     // consumer) can't commit a deferred render after a later file resets the kea store.
     afterEach(() => cleanup())
 
-    function DashboardSharingModalWrapper({ extraProps }: { extraProps?: Partial<SharingModalProps> }): JSX.Element {
+    function DashboardSharingModalWrapper({
+        extraProps,
+        autoRefreshInterval = 0,
+    }: {
+        extraProps?: Partial<SharingModalProps>
+        autoRefreshInterval?: number | null
+    }): JSX.Element {
         // Render the dashboard sharing modal with `WHITE_LABELLING` so the UI shows
         // the branding option in the form.
         useAvailableFeatures([AvailableFeature.WHITE_LABELLING])
         initKeaTests()
         themeLogic.mount()
         useMocks({
-            get: mockDashboardSharingConfiguration({}),
+            get: mockDashboardSharingConfiguration({ autoRefreshInterval }),
         })
 
         const props: SharingModalProps = {
@@ -113,6 +122,15 @@ describe('SharingModal (dashboard)', () => {
 
         // Dashboard options smoke checks
         expect(screen.getByText(/Show PostHog branding/i)).toBeInTheDocument()
+        expect(screen.getByText('Auto refresh shared dashboard')).toBeInTheDocument()
+        expect(screen.queryByText('Refresh interval')).not.toBeInTheDocument()
+    })
+
+    it('shows the legacy 30-minute interval for existing shared dashboards', async () => {
+        render(<DashboardSharingModalWrapper autoRefreshInterval={null} />)
+
+        expect(await screen.findByText('Auto refresh shared dashboard')).toBeInTheDocument()
+        expect(await screen.findByText('30 minutes')).toBeInTheDocument()
     })
 
     it('calls onSharingEnabledChange after the dashboard sharing switch update succeeds', async () => {

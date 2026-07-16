@@ -66,6 +66,7 @@ export function Exporter(props: ExportedData): JSX.Element {
         ...exportOptions
     } = props
     const { whitelabel, showInspector = false } = exportOptions
+    const dashboardAutoRefreshInterval = props.dashboardAutoRefreshInterval ?? AUTO_REFRESH_INITIAL_INTERVAL_SECONDS
     const forcedTheme = resolveForcedTheme(exportOptions.theme)
 
     // A metric insight sizes to a square card rather than filling the viewport, so drop the 100vh floor
@@ -149,7 +150,9 @@ export function Exporter(props: ExportedData): JSX.Element {
                             <div className="SharedDashboard-header-team text-right">
                                 <span className="block">{currentTeam?.name}</span>
                                 <span className="block text-xs text-muted-alt">
-                                    Auto refresh every {humanFriendlyDuration(AUTO_REFRESH_INITIAL_INTERVAL_SECONDS)}
+                                    {dashboardAutoRefreshInterval > 0
+                                        ? `Auto refresh every ${humanFriendlyDuration(dashboardAutoRefreshInterval)}`
+                                        : 'Auto refresh off'}
                                 </span>
                             </div>
                         </div>
@@ -196,7 +199,12 @@ export function Exporter(props: ExportedData): JSX.Element {
                     </Suspense>
                 ) : dashboard ? (
                     <Suspense fallback={<ExportedSceneSkeleton />}>
-                        <LazyDashboardScene dashboard={dashboard} type={type} themes={themes} />
+                        <LazyDashboardScene
+                            dashboard={dashboard}
+                            type={type}
+                            themes={themes}
+                            dashboardAutoRefreshInterval={props.dashboardAutoRefreshInterval}
+                        />
                     </Suspense>
                 ) : recording ? (
                     <Suspense fallback={<ExportedSceneSkeleton />}>

@@ -8917,12 +8917,38 @@ export const DashboardsSharingPasswordsCreateBody = /* @__PURE__ */ zod.object({
     enabled: zod.boolean().optional(),
     settings: zod.unknown().optional(),
     password_required: zod.boolean().optional(),
+    auto_refresh_interval: zod
+        .union([
+            zod
+                .union([zod.literal(0), zod.literal(1800), zod.literal(3600), zod.literal(5400), zod.literal(21600)])
+                .describe(
+                    '\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+                ),
+            zod.null(),
+        ])
+        .optional()
+        .describe(
+            'Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.\n\n\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+        ),
 })
 
 export const DashboardsSharingRefreshCreateBody = /* @__PURE__ */ zod.object({
     enabled: zod.boolean().optional(),
     settings: zod.unknown().optional(),
     password_required: zod.boolean().optional(),
+    auto_refresh_interval: zod
+        .union([
+            zod
+                .union([zod.literal(0), zod.literal(1800), zod.literal(3600), zod.literal(5400), zod.literal(21600)])
+                .describe(
+                    '\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+                ),
+            zod.null(),
+        ])
+        .optional()
+        .describe(
+            'Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.\n\n\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+        ),
 })
 
 /**
@@ -9517,12 +9543,38 @@ export const InsightsSharingPasswordsCreateBody = /* @__PURE__ */ zod.object({
     enabled: zod.boolean().optional(),
     settings: zod.unknown().optional(),
     password_required: zod.boolean().optional(),
+    auto_refresh_interval: zod
+        .union([
+            zod
+                .union([zod.literal(0), zod.literal(1800), zod.literal(3600), zod.literal(5400), zod.literal(21600)])
+                .describe(
+                    '\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+                ),
+            zod.null(),
+        ])
+        .optional()
+        .describe(
+            'Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.\n\n\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+        ),
 })
 
 export const InsightsSharingRefreshCreateBody = /* @__PURE__ */ zod.object({
     enabled: zod.boolean().optional(),
     settings: zod.unknown().optional(),
     password_required: zod.boolean().optional(),
+    auto_refresh_interval: zod
+        .union([
+            zod
+                .union([zod.literal(0), zod.literal(1800), zod.literal(3600), zod.literal(5400), zod.literal(21600)])
+                .describe(
+                    '\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+                ),
+            zod.null(),
+        ])
+        .optional()
+        .describe(
+            'Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.\n\n\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+        ),
 })
 
 /**
@@ -9532,12 +9584,38 @@ export const NotebooksSharingPasswordsCreateBody = /* @__PURE__ */ zod.object({
     enabled: zod.boolean().optional(),
     settings: zod.unknown().optional(),
     password_required: zod.boolean().optional(),
+    auto_refresh_interval: zod
+        .union([
+            zod
+                .union([zod.literal(0), zod.literal(1800), zod.literal(3600), zod.literal(5400), zod.literal(21600)])
+                .describe(
+                    '\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+                ),
+            zod.null(),
+        ])
+        .optional()
+        .describe(
+            'Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.\n\n\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+        ),
 })
 
 export const NotebooksSharingRefreshCreateBody = /* @__PURE__ */ zod.object({
     enabled: zod.boolean().optional(),
     settings: zod.unknown().optional(),
     password_required: zod.boolean().optional(),
+    auto_refresh_interval: zod
+        .union([
+            zod
+                .union([zod.literal(0), zod.literal(1800), zod.literal(3600), zod.literal(5400), zod.literal(21600)])
+                .describe(
+                    '\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+                ),
+            zod.null(),
+        ])
+        .optional()
+        .describe(
+            'Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.\n\n\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+        ),
 })
 
 export const ProductEnablementCreateBody = /* @__PURE__ */ zod.object({
@@ -9669,12 +9747,38 @@ export const SessionRecordingsSharingPasswordsCreateBody = /* @__PURE__ */ zod.o
     enabled: zod.boolean().optional(),
     settings: zod.unknown().optional(),
     password_required: zod.boolean().optional(),
+    auto_refresh_interval: zod
+        .union([
+            zod
+                .union([zod.literal(0), zod.literal(1800), zod.literal(3600), zod.literal(5400), zod.literal(21600)])
+                .describe(
+                    '\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+                ),
+            zod.null(),
+        ])
+        .optional()
+        .describe(
+            'Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.\n\n\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+        ),
 })
 
 export const SessionRecordingsSharingRefreshCreateBody = /* @__PURE__ */ zod.object({
     enabled: zod.boolean().optional(),
     settings: zod.unknown().optional(),
     password_required: zod.boolean().optional(),
+    auto_refresh_interval: zod
+        .union([
+            zod
+                .union([zod.literal(0), zod.literal(1800), zod.literal(3600), zod.literal(5400), zod.literal(21600)])
+                .describe(
+                    '\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+                ),
+            zod.null(),
+        ])
+        .optional()
+        .describe(
+            'Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.\n\n\* `0` - Disabled\n\* `1800` - 30 minutes\n\* `3600` - 1 hour\n\* `5400` - 1.5 hours\n\* `21600` - 6 hours'
+        ),
 })
 
 /**

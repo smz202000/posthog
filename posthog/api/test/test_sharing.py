@@ -146,6 +146,7 @@ class TestSharing(APIBaseTest):
             "created_at": None,
             "enabled": False,
             "password_required": False,
+            "auto_refresh_interval": 0,
             "settings": None,
             "share_passwords": [],
         }
@@ -166,6 +167,7 @@ class TestSharing(APIBaseTest):
             "created_at": "2022-01-01T00:00:00Z",
             "enabled": True,
             "password_required": False,
+            "auto_refresh_interval": 0,
             "settings": None,
             "share_passwords": [],
         }
@@ -179,6 +181,7 @@ class TestSharing(APIBaseTest):
             "created_at": "2022-01-01T00:00:00Z",
             "enabled": False,
             "password_required": False,
+            "auto_refresh_interval": 0,
             "settings": None,
             "share_passwords": [],
         }
@@ -1001,6 +1004,28 @@ class TestSharingConfigurationSerializerValidation(APIBaseTest):
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["settings"] == valid_settings
+
+    @parameterized.expand([0, 1800, 3600, 5400, 21600])
+    @patch("products.exports.backend.api.exports.ExportedAssetSerializer._start_export_workflow")
+    def test_valid_auto_refresh_intervals_are_accepted(
+        self, auto_refresh_interval: int, patched_exporter_task: Mock
+    ) -> None:
+        response = self.client.patch(
+            f"/api/projects/{self.team.id}/dashboards/{self.dashboard.id}/sharing",
+            {"enabled": True, "auto_refresh_interval": auto_refresh_interval},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["auto_refresh_interval"] == auto_refresh_interval
+
+    @patch("products.exports.backend.api.exports.ExportedAssetSerializer._start_export_workflow")
+    def test_invalid_auto_refresh_interval_is_rejected(self, patched_exporter_task: Mock) -> None:
+        response = self.client.patch(
+            f"/api/projects/{self.team.id}/dashboards/{self.dashboard.id}/sharing",
+            {"enabled": True, "auto_refresh_interval": 900},
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     @patch("products.exports.backend.api.exports.ExportedAssetSerializer._start_export_workflow")
     def test_partial_settings_are_filled_with_defaults(self, patched_exporter_task: Mock):

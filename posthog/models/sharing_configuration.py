@@ -68,6 +68,18 @@ class SharingConfiguration(models.Model):
     settings = models.JSONField(null=True, blank=True, help_text="JSON settings for storing configuration options")
 
     password_required = models.BooleanField(default=False)
+    auto_refresh_interval = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        choices=[
+            (0, "Disabled"),
+            (1800, "30 minutes"),
+            (3600, "1 hour"),
+            (5400, "1.5 hours"),
+            (21600, "6 hours"),
+        ],
+        help_text="Shared dashboard auto-refresh interval in seconds. Null preserves the legacy 30-minute default.",
+    )
 
     @classmethod
     def shareable_resource_fields(cls) -> frozenset[str]:
@@ -213,6 +225,7 @@ class SharingConfiguration(models.Model):
                 enabled=source.enabled,
                 settings=source.settings,
                 password_required=source.password_required,
+                auto_refresh_interval=source.auto_refresh_interval,
             )
 
             if source.password_required:

@@ -9,6 +9,22 @@ type MessageFunctionActionType = 'function_email' | 'function_sms' | 'function_p
 
 type MessageAction = Extract<HogFlowAction, { type: MessageFunctionActionType }>
 
+// Split a comma-separated address list and, for each entry, extract the bare email from an RFC-822
+// `"Name" <email@x>` form so it can be matched against normalized suppression identifiers.
+const extractEmailsFromAddressList = (value: unknown): string[] => {
+    if (typeof value !== 'string' || value.trim().length === 0) {
+        return []
+    }
+    return value
+        .split(',')
+        .map((raw) => {
+            const trimmed = raw.trim()
+            const bracketed = trimmed.match(/<([^>]+)>/)
+            return (bracketed ? bracketed[1] : trimmed).trim()
+        })
+        .filter((addr) => addr.length > 0)
+}
+
 export class RecipientPreferencesService {
     constructor(
         private recipientsManager: RecipientsManagerService,
@@ -47,15 +63,30 @@ export class RecipientPreferencesService {
         if (action.type !== 'function_email') {
             return false
         }
-        const email = invocation.state.globals.inputs?.email?.to?.email
-        if (typeof email !== 'string' || email.trim().length === 0) {
+
+        // Check every destination address SES will see — `to`, `cc`, and `bcc`. Otherwise an
+        // attacker (or user) who controls recipient data could place a suppressed address in
+        // cc/bcc and slip a send through the `to`-only check.
+        const emailInputs = invocation.state.globals.inputs?.email
+        const to = emailInputs?.to?.email
+        const recipients = [
+            ...(typeof to === 'string' && to.trim() ? [to.trim()] : []),
+            ...extractEmailsFromAddressList(emailInputs?.cc),
+            ...extractEmailsFromAddressList(emailInputs?.bcc),
+        ]
+
+        if (recipients.length === 0) {
             return false
         }
+
         try {
-            return await this.emailSuppressionService.isSuppressed(invocation.teamId, email)
+            const results = await Promise.all(
+                recipients.map((email) => this.emailSuppressionService.isSuppressed(invocation.teamId, email))
+            )
+            return results.some(Boolean)
         } catch (error) {
             // Fail open — never block a send on a suppression-lookup error.
-            logger.error(`Failed to check suppression list for ${email}:`, error)
+            logger.error(`Failed to check suppression list for recipients ${recipients.join(', ')}:`, error)
             return false
         }
     }

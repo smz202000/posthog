@@ -60,3 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Calendly: the framework's default `"v1"` label already targeted Calendly's real v2 REST host (`api.calendly.com`), so adding a `"v2"` label + flipping the default is behavior-preserving — map both labels to the same base URL rather than resurrecting the legacy `calendly.com/api/v1` host (that would break existing `v1` pins). Dispatch via a `_BASE_URL_BY_VERSION` map threaded through `get_rows`; keep credential-validation on the constant base URL. Version-dispatch tests read cleaner as parameterizing over `SUPPORTED_API_VERSIONS` and asserting the request host, plus a source-level test that a pin/no-pin resolves to the expected version reaching the request layer.

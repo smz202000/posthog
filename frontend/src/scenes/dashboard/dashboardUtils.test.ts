@@ -158,5 +158,18 @@ describe('shouldSharedDashboardAutoForceForStaleTime', () => {
         ])('when %s, returns expected result', (_, isoTime, expected) => {
             expect(shouldSharedDashboardAutoForceForStaleTime(dayjs(isoTime))).toBe(expected)
         })
+
+        it.each([
+            ['1.5 hours', 5400, '2026-06-15T10:31:00.000Z', false],
+            ['6 hours', 21600, '2026-06-15T06:00:00.000Z', true],
+        ])('uses the configured %s interval', (_, intervalSeconds, isoTime, expected) => {
+            expect(shouldSharedDashboardAutoForceForStaleTime(dayjs(isoTime), intervalSeconds)).toBe(expected)
+        })
+
+        it('does not force refresh when auto refresh is disabled', () => {
+            expect(shouldSharedDashboardAutoForceForStaleTime(dayjs('2026-06-15T06:00:00.000Z'), 1800, false)).toBe(
+                false
+            )
+        })
     })
 })

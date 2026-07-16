@@ -265,7 +265,7 @@ export const dashboardLogic = kea<dashboardLogicType>([
         /** Manually refresh the entire dashboard. */
         triggerDashboardRefresh: true,
         /**
-         * If the latest tile data is older than SHARED_DASHBOARD_AUTO_FORCE_IF_STALE_MINUTES,
+         * If the latest tile data is older than the configured auto-refresh interval,
          * queue a single force-blocking refresh on the next microtask. Reads
          * `effectiveLastRefresh` from values, so always sees the live age — no closure.
          */
@@ -2328,7 +2328,13 @@ export const dashboardLogic = kea<dashboardLogicType>([
             if (cache.lastAutoForcedFor === currentRefreshKey) {
                 return
             }
-            if (!shouldSharedDashboardAutoForceForStaleTime(values.effectiveLastRefresh)) {
+            if (
+                !shouldSharedDashboardAutoForceForStaleTime(
+                    values.effectiveLastRefresh,
+                    values.autoRefresh.interval,
+                    values.autoRefresh.enabled
+                )
+            ) {
                 return
             }
             cache.lastAutoForcedFor = currentRefreshKey
@@ -2868,6 +2874,7 @@ export const dashboardLogic = kea<dashboardLogicType>([
             actions.resetInterval()
         },
         resetInterval: () => {
+            cache.disposables.dispose('autoRefreshInterval')
             if (values.autoRefresh.enabled) {
                 // Refresh right now after enabling if we haven't refreshed recently
                 if (

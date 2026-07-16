@@ -122,14 +122,24 @@ class TestSharedDashboardAutoRefresh(APIBaseTest):
 
     @parameterized.expand(
         [
-            ("-30d", 5400),
-            ("-31d", 0),
+            ("-30d", None, 5400),
+            ("-31d", None, 0),
+            ("invalid-date-range", None, 0),
+            ("-31d", "-7d", 5400),
         ]
     )
     @freeze_time("2026-07-16 12:00:00")
     @mock_exporter_template
-    def test_shared_dashboard_suppresses_expensive_auto_refresh(self, date_from: str, expected_interval: int) -> None:
+    def test_shared_dashboard_suppresses_expensive_auto_refresh(
+        self, date_from: str, tile_date_from: str | None, expected_interval: int
+    ) -> None:
         dashboard = Dashboard.objects.create(team=self.team, name="Dashboard", filters={"date_from": date_from})
+        insight = Insight.objects.create(team=self.team, filters=Filter(data={"date_from": "-7d"}).to_dict())
+        DashboardTile.objects.create(
+            dashboard=dashboard,
+            insight=insight,
+            filters_overrides={"date_from": tile_date_from} if tile_date_from else None,
+        )
         config = SharingConfiguration.objects.create(
             team=self.team,
             dashboard=dashboard,

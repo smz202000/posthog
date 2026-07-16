@@ -2,7 +2,7 @@ import { useActions, useValues } from 'kea'
 import { Form } from 'kea-forms'
 import { router } from 'kea-router'
 import posthog from 'posthog-js'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 
 import { IconCollapse, IconExpand, IconInfo, IconLock } from '@posthog/icons'
 import {
@@ -129,14 +129,12 @@ export function SharingModalContent({
         recordingId,
         notebookShortId,
         additionalParams,
-        onSharingEnabledChange,
     }
     const {
         whitelabelAvailable,
         accessControlAvailable,
         sharingConfiguration,
         sharingConfigurationLoading,
-        setAutoRefreshIntervalLoading,
         showPreview,
         embedCode,
         iframeProperties,
@@ -144,8 +142,14 @@ export function SharingModalContent({
         sharingAllowed,
     } = useValues(sharingLogic(logicProps))
     const { currentTeam } = useValues(teamLogic)
-    const { setIsEnabled, setPasswordRequired, setAutoRefreshInterval, togglePreview, setSharingSettingsValue } =
-        useActions(sharingLogic(logicProps))
+    const {
+        loadSharingConfiguration,
+        setIsEnabled,
+        setPasswordRequired,
+        setAutoRefreshInterval,
+        togglePreview,
+        setSharingSettingsValue,
+    } = useActions(sharingLogic(logicProps))
     const { guardAvailableFeature } = useValues(upgradeModalLogic)
     const { preflight } = useValues(preflightLogic)
     const siteUrl = preflight?.site_url || window.location.origin
@@ -197,6 +201,14 @@ export function SharingModalContent({
         ? accessLevelSatisfied(resource as AccessControlResourceType, userAccessLevel, AccessControlLevel.Editor)
         : true
     const autoRefreshRestriction = getDashboardAutoRefreshRestriction(dashboard, currentTeam?.timezone ?? 'UTC')
+    const hasRetriedSharingConfiguration = useRef(false)
+
+    useEffect(() => {
+        if (!sharingConfiguration && !sharingConfigurationLoading && !hasRetriedSharingConfiguration.current) {
+            hasRetriedSharingConfiguration.current = true
+            loadSharingConfiguration()
+        }
+    }, [loadSharingConfiguration, sharingConfiguration, sharingConfigurationLoading])
 
     useEffect(() => {
         setIframeLoaded(false)
@@ -252,9 +264,9 @@ export function SharingModalContent({
                                 <LemonSwitch
                                     id="sharing-switch"
                                     label={`Share ${resource} publicly`}
-                                    checked={sharingConfiguration.enabled}
+                                    checked={Boolean(sharingConfiguration.enabled)}
                                     data-attr="sharing-switch"
-                                    onChange={(active) => setIsEnabled(active)}
+                                    onChange={(enabled) => setIsEnabled({ enabled, onSuccess: onSharingEnabledChange })}
                                     bordered
                                     fullWidth
                                     loading={sharingConfigurationLoading}
@@ -289,7 +301,7 @@ export function SharingModalContent({
                                                         setPasswordRequired(passwordRequired)
                                                     }
                                                 }}
-                                                checked={sharingConfiguration.password_required}
+                                                checked={Boolean(sharingConfiguration.password_required)}
                                             />
                                             {sharingConfiguration.password_required && (
                                                 <div className="mt-1 w-full">
@@ -315,7 +327,7 @@ export function SharingModalContent({
                                                 fullWidth
                                                 label="Auto refresh shared dashboard"
                                                 checked={sharingConfiguration.auto_refresh_interval !== 0}
-                                                loading={setAutoRefreshIntervalLoading}
+                                                loading={sharingConfigurationLoading}
                                                 disabled={Boolean(autoRefreshRestriction)}
                                                 onChange={(enabled) => setAutoRefreshInterval(enabled ? 5400 : 0)}
                                             />
@@ -329,7 +341,7 @@ export function SharingModalContent({
                                                         value={sharingConfiguration.auto_refresh_interval ?? 1800}
                                                         onSelect={setAutoRefreshInterval}
                                                         disabled={
-                                                            setAutoRefreshIntervalLoading ||
+                                                            sharingConfigurationLoading ||
                                                             Boolean(autoRefreshRestriction)
                                                         }
                                                         options={[

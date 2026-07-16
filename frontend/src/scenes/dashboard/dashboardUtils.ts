@@ -29,7 +29,7 @@ import {
     TileLayout,
 } from '~/types'
 
-import { SHARED_DASHBOARD_AUTO_FORCE_IF_STALE_MINUTES } from './dashboardConstants'
+import { AUTO_REFRESH_INITIAL_INTERVAL_SECONDS } from './dashboardConstants'
 
 /** Shape used for staff JSON export, customer save-as-template, and API `create_from_template_json`. */
 export function dashboardToSaveableTemplate(
@@ -176,9 +176,16 @@ function staleAgeMinutes(effectiveLastRefresh: Dayjs | null): number | null {
     return (Date.now() - ms) / 60_000
 }
 
-export function shouldSharedDashboardAutoForceForStaleTime(effectiveLastRefresh: Dayjs | null): boolean {
+export function shouldSharedDashboardAutoForceForStaleTime(
+    effectiveLastRefresh: Dayjs | null,
+    intervalSeconds: number = AUTO_REFRESH_INITIAL_INTERVAL_SECONDS,
+    enabled: boolean = true
+): boolean {
+    if (!enabled) {
+        return false
+    }
     const ageMinutes = staleAgeMinutes(effectiveLastRefresh)
-    return ageMinutes !== null && ageMinutes >= SHARED_DASHBOARD_AUTO_FORCE_IF_STALE_MINUTES
+    return ageMinutes !== null && ageMinutes >= intervalSeconds / 60
 }
 
 // Helper function for exponential backoff

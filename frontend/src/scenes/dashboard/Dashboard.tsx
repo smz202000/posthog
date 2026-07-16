@@ -147,7 +147,7 @@ function DashboardScene({
                     })}
                 >
                     <DashboardOverridesBanner />
-                    <DashboardAutoRefreshRestrictionBanner />
+                    <DashboardAutoRefreshRestrictionBanner placement={placement} />
 
                     <SceneStickyBar showBorderBottom={false} className="flex gap-2 space-y-0">
                         <DashboardFilterBar backTo={backTo} />

@@ -1,10 +1,9 @@
-import { parseDateExpression } from 'lib/components/DateFilter/DateRangePicker/utils'
-import { dateFilterToText } from 'lib/utils/dateFilters'
+import { dayjs } from 'lib/dayjs'
+import { componentsToDayJs, dateFilterToText, dateStringToComponents, dateStringToDayJs } from 'lib/utils/dateFilters'
 
 import { DashboardType, QueryBasedInsightModel } from '~/types'
 
 const MAX_AUTO_REFRESH_RANGE_DAYS = 30
-const DATE_PARSE_CLOCK_SKEW_DAYS = 1 / (24 * 60)
 
 type DateRangeLike = {
     date_from?: string | null
@@ -36,17 +35,18 @@ function dateRangeExceedsLimit(dateRange: DateRangeLike, timezone: string): bool
     if (dateRange.date_from === 'all') {
         return true
     }
-    const dateFrom = parseDateExpression(dateRange.date_from ?? '-7d', timezone)
-    const dateTo = parseDateExpression(dateRange.date_to ?? 'now', timezone)
-    return Boolean(
-        dateFrom &&
-        dateTo &&
-        dateTo.diff(dateFrom, 'day', true) > MAX_AUTO_REFRESH_RANGE_DAYS + DATE_PARSE_CLOCK_SKEW_DAYS
-    )
+    const currentTime = dayjs().tz(timezone)
+    const parseDate = (value: string): dayjs.Dayjs | null => {
+        const components = dateStringToComponents(value)
+        return components ? componentsToDayJs(components, currentTime, timezone) : dateStringToDayJs(value, timezone)
+    }
+    const dateTo = dateRange.date_to ? parseDate(dateRange.date_to) : currentTime
+    const dateFrom = parseDate(dateRange.date_from ?? '-7d')
+    return !dateFrom || !dateTo || dateTo.diff(dateFrom, 'day', true) > MAX_AUTO_REFRESH_RANGE_DAYS
 }
 
 function getDateRangeLabel(dateRange: DateRangeLike): string {
-    return dateFilterToText(dateRange.date_from ?? '-7d', dateRange.date_to, 'the selected date range')
+    return dateFilterToText(dateRange.date_from ?? '-7d', dateRange.date_to, 'the selected date range') ?? 'Unknown'
 }
 
 export function getDashboardAutoRefreshRestriction(
@@ -57,10 +57,8 @@ export function getDashboardAutoRefreshRestriction(
         return null
     }
 
-    const dashboardDateRange = dashboard.filters ?? {}
-    if (hasDateRange(dashboardDateRange) && dateRangeExceedsLimit(dashboardDateRange, timezone)) {
-        return { source: 'dashboard', dateRangeLabel: getDateRangeLabel(dashboardDateRange) }
-    }
+    const dashboardDateRange =
+        dashboard.persisted_filters === undefined ? (dashboard.filters ?? {}) : (dashboard.persisted_filters ?? {})
 
     for (const tile of dashboard.tiles ?? []) {
         if (!tile.insight) {
@@ -68,20 +66,28 @@ export function getDashboardAutoRefreshRestriction(
         }
         const tileDateRange = tile.filters_overrides ?? {}
         const insightDateRange = getQueryDateRange(tile.insight.query)
+        const legacyInsightDateRange = (tile.insight as QueryBasedInsightModel & { filters?: DateRangeLike }).filters
+        const source = hasDateRange(tileDateRange)
+            ? 'insight'
+            : hasDateRange(dashboardDateRange)
+              ? 'dashboard'
+              : 'insight'
         const effectiveDateRange = hasDateRange(tileDateRange)
             ? tileDateRange
             : hasDateRange(dashboardDateRange)
               ? dashboardDateRange
               : hasDateRange(insightDateRange)
                 ? insightDateRange
-                : tile.insight.filters
+                : (legacyInsightDateRange ?? {})
 
         if (dateRangeExceedsLimit(effectiveDateRange, timezone)) {
-            return {
-                source: 'insight',
-                insightName: tile.insight.name || tile.insight.derived_name || 'An insight',
-                dateRangeLabel: getDateRangeLabel(effectiveDateRange),
-            }
+            return source === 'dashboard'
+                ? { source, dateRangeLabel: getDateRangeLabel(effectiveDateRange) }
+                : {
+                      source,
+                      insightName: tile.insight.name || tile.insight.derived_name || 'An insight',
+                      dateRangeLabel: getDateRangeLabel(effectiveDateRange),
+                  }
         }
     }
 

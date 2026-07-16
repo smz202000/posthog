@@ -1373,6 +1373,10 @@ describe('dashboardLogic', () => {
         })
 
         describe('page visibility', () => {
+            afterEach(() => {
+                jest.useRealTimers()
+            })
+
             it('pauses auto-refresh when page is hidden and resumes when visible', async () => {
                 await expectLogic(logic, () => {
                     logic.actions.setAutoRefresh(true, 1800)
@@ -1405,6 +1409,20 @@ describe('dashboardLogic', () => {
                 })
                     .toDispatchActions(['setPageVisibility'])
                     .toNotHaveDispatchedActions(['resetInterval'])
+            })
+
+            it('clears an existing interval when auto-refresh is disabled', async () => {
+                jest.useFakeTimers()
+
+                await expectLogic(logic, () => {
+                    logic.actions.setAutoRefresh(true, 1800)
+                }).toDispatchActions(['setAutoRefresh', 'resetInterval'])
+                expect(jest.getTimerCount()).toBe(1)
+
+                await expectLogic(logic, () => {
+                    logic.actions.setAutoRefresh(false, 1800)
+                }).toDispatchActions(['setAutoRefresh', 'resetInterval'])
+                expect(jest.getTimerCount()).toBe(0)
             })
         })
     })

@@ -138,8 +138,18 @@ describe('SharingModal (dashboard)', () => {
             id: dashboardId,
             name: 'Expensive dashboard',
             filters: { date_from: '-90d' },
-            tiles: [],
-        } as DashboardType<QueryBasedInsightModel>
+            tiles: [
+                {
+                    id: 1,
+                    color: null,
+                    insight: {
+                        id: defaultInsightId,
+                        name: 'Trend',
+                        query: { kind: 'InsightVizNode', source: { kind: 'TrendsQuery' } },
+                    },
+                },
+            ],
+        } as unknown as DashboardType<QueryBasedInsightModel>
 
         render(<DashboardSharingModalWrapper extraProps={{ dashboard }} />)
 
@@ -160,7 +170,9 @@ describe('SharingModal (dashboard)', () => {
             patch: mockDashboardSharingConfiguration({ enabled: true }),
         })
 
-        const logic = sharingLogic({ dashboardId, onSharingEnabledChange })
+        const bannerLogic = sharingLogic({ dashboardId })
+        bannerLogic.mount()
+        const logic = sharingLogic({ dashboardId })
         eventUsageLogic.mount()
         await expectLogic(logic, () => {
             logic.mount()
@@ -168,12 +180,13 @@ describe('SharingModal (dashboard)', () => {
         expect(onSharingEnabledChange).not.toHaveBeenCalled()
 
         await expectLogic(logic, () => {
-            logic.actions.setIsEnabled(true)
+            logic.actions.setIsEnabled({ enabled: true, onSuccess: onSharingEnabledChange })
         }).toDispatchActions(['setIsEnabledSuccess'])
 
         expect(onSharingEnabledChange).toHaveBeenCalledTimes(1)
         expect(onSharingEnabledChange).toHaveBeenCalledWith(true)
         logic.unmount()
+        bannerLogic.unmount()
         eventUsageLogic.unmount()
     })
 
@@ -185,7 +198,7 @@ describe('SharingModal (dashboard)', () => {
             get: mockDashboardSharingConfiguration({ enabled: true }),
         })
 
-        const logic = sharingLogic({ dashboardId, onSharingEnabledChange })
+        const logic = sharingLogic({ dashboardId })
 
         await expectLogic(logic, () => {
             logic.mount()

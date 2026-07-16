@@ -417,6 +417,13 @@ export class SesWebhookHandler {
             emailAddresses: string[]
             diagnostic?: string
         }[]
+        // Hard (Permanent) bounces — mirrored into the suppression list alongside the existing
+        // opt-out write, during the dual-write window before the opt-out path is retired.
+        hardBounceRecipients?: {
+            teamId?: string
+            emailAddresses: string[]
+            diagnostic?: string
+        }[]
         // Successful deliveries — reset the suppression counter so transient outages don't accumulate.
         deliveredRecipients?: {
             teamId?: string
@@ -493,6 +500,11 @@ export class SesWebhookHandler {
             emailAddresses: string[]
         }[] = []
         const transientBounceRecipients: {
+            teamId?: string
+            emailAddresses: string[]
+            diagnostic?: string
+        }[] = []
+        const hardBounceRecipients: {
             teamId?: string
             emailAddresses: string[]
             diagnostic?: string
@@ -580,10 +592,14 @@ export class SesWebhookHandler {
                 })
             }
 
-            // Opt out recipients on permanent bounces
+            // Opt out recipients on permanent bounces. Dual-write: also mirror into the suppression
+            // list with the SMTP diagnostic so a unified deliverability view exists before the
+            // opt-out path is retired (see phase 2 of the suppression rollout).
             if (teamId && rec.eventType === 'Bounce' && rec.bounce.bounceType === 'Permanent') {
                 const emails = rec.bounce.bouncedRecipients.map((r) => r.emailAddress)
+                const diagnostic = rec.bounce.bouncedRecipients.find((r) => r.diagnosticCode)?.diagnosticCode
                 optOutRecipients.push({ teamId, emailAddresses: emails })
+                hardBounceRecipients.push({ teamId, emailAddresses: emails, diagnostic })
             }
 
             // Count soft (Transient) bounces toward suppression. These are recipient-side failures
@@ -611,6 +627,7 @@ export class SesWebhookHandler {
             logEntries,
             optOutRecipients,
             transientBounceRecipients,
+            hardBounceRecipients,
             deliveredRecipients,
         }
     }

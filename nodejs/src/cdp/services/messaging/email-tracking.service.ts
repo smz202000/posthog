@@ -317,6 +317,7 @@ export class EmailTrackingService {
                 logEntries,
                 optOutRecipients,
                 transientBounceRecipients,
+                hardBounceRecipients,
                 deliveredRecipients,
             } = await this.sesWebhookHandler.handleWebhook({
                 body: parseJSON(req.body),
@@ -405,6 +406,15 @@ export class EmailTrackingService {
                             emailAddresses,
                             diagnostic
                         )
+                    }
+                }
+                // Dual-write: hard bounces still go through the opt-out path above; here we also
+                // mirror them into the suppression list so the unified deliverability view
+                // includes them ahead of phase 2 (retiring the opt-out write).
+                for (const { teamId, emailAddresses, diagnostic } of hardBounceRecipients || []) {
+                    const parsedTeamId = teamId ? parseInt(teamId, 10) : NaN
+                    if (parsedTeamId && !isNaN(parsedTeamId)) {
+                        await this.emailSuppressionService.recordHardBounces(parsedTeamId, emailAddresses, diagnostic)
                     }
                 }
             } catch (error) {

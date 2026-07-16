@@ -247,6 +247,10 @@ describe('SesWebhookHandler', () => {
         expect(result.metrics).toEqual([])
         expect(result.logEntries).toEqual([])
         expect(result.optOutRecipients).toEqual([{ teamId: '1', emailAddresses: ['to@example.com'] }])
+        // Consistent with the opt-out path: a hard bounce is a hard bounce, test send or not.
+        expect(result.hardBounceRecipients).toEqual([
+            { teamId: '1', emailAddresses: ['to@example.com'], diagnostic: 'bad' },
+        ])
     })
 
     it('parses a raw Delivery event', async () => {
@@ -292,6 +296,10 @@ describe('SesWebhookHandler', () => {
         expect(result.metrics?.[0].metricName).toBe('email_bounced')
         expect(result.metrics?.[0].distinctId).toBe('user-123')
         expect(result.optOutRecipients).toEqual([{ teamId: '1', emailAddresses: ['to@example.com'] }])
+        // Dual-write: permanent bounces also surface for the suppression list with the diagnostic.
+        expect(result.hardBounceRecipients).toEqual([
+            { teamId: '1', emailAddresses: ['to@example.com'], diagnostic: 'bad' },
+        ])
     })
 
     it('does not return opt-out recipients for transient bounces', async () => {

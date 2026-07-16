@@ -12,7 +12,7 @@ const DEFAULT_TRANSIENT_BOUNCE_THRESHOLD = 5
 
 const cdpEmailSuppressionTotal = new Counter({
     name: 'cdp_email_suppression_total',
-    help: 'Email suppression-list outcomes. `suppressed_hit` = a send skipped because the recipient is on the list; `auto_suppressed` = an address crossed the soft-bounce threshold and was added.',
+    help: 'Email suppression-list outcomes. `suppressed_hit` = a send skipped because the recipient is on the list; `transient_bounce` = a soft-bounce counter increment; `hard_bounce` = an address suppressed immediately after a permanent bounce.',
     labelNames: ['result'],
 })
 
@@ -160,6 +160,69 @@ export class EmailSuppressionService {
             this.lazyLoader.clear()
         } catch (error) {
             logger.error('[EmailSuppression] Failed to record transient bounces', { teamId, error })
+        }
+    }
+
+    /**
+     * Record one or more hard (Permanent) bounces. Suppresses each address immediately — no
+     * threshold, no counter — because a permanent bounce is definitive. Manual entries are never
+     * touched. If a row already exists as an unsuppressed BOUNCE counter, this escalates it.
+     */
+    public async recordHardBounces(teamId: number, emails: string[], diagnostic?: string): Promise<void> {
+        if (!this.writeEnabled) {
+            return
+        }
+        const identifiers = Array.from(new Set(emails.map(normalizeIdentifier).filter(Boolean)))
+        if (identifiers.length === 0) {
+            return
+        }
+
+        const diag = diagnostic ? diagnostic.slice(0, DIAGNOSTIC_MAX_LENGTH) : null
+        const reason = 'Auto-suppressed after a hard bounce'
+
+        // Params: teamId, reason, diag, then one identifier per row.
+        const valueClauses: string[] = []
+        const params: (number | string | null)[] = [teamId, reason, diag]
+        identifiers.forEach((identifier, i) => {
+            const p = params.length + 1 + i
+            valueClauses.push(
+                `(gen_random_uuid(), $1, $${p}, 'BOUNCE', $2, 0, NOW(), $3, true, NOW(), false, NOW(), NOW())`
+            )
+        })
+        params.push(...identifiers)
+
+        const query = `
+            INSERT INTO posthog_messagesuppression
+                (id, team_id, identifier, source, reason, transient_bounce_count, last_bounce_at,
+                 last_bounce_diagnostic, suppressed, suppressed_at, deleted, created_at, updated_at)
+            VALUES ${valueClauses.join(', ')}
+            ON CONFLICT (team_id, identifier) DO UPDATE SET
+                last_bounce_at = NOW(),
+                last_bounce_diagnostic = EXCLUDED.last_bounce_diagnostic,
+                -- Manual entries are authoritative; never override them.
+                suppressed = CASE
+                    WHEN posthog_messagesuppression.source = 'MANUAL' THEN posthog_messagesuppression.suppressed
+                    ELSE true END,
+                suppressed_at = CASE
+                    WHEN posthog_messagesuppression.source = 'MANUAL' THEN posthog_messagesuppression.suppressed_at
+                    WHEN posthog_messagesuppression.suppressed = false THEN NOW()
+                    ELSE posthog_messagesuppression.suppressed_at END,
+                reason = CASE
+                    WHEN posthog_messagesuppression.source = 'MANUAL' THEN posthog_messagesuppression.reason
+                    ELSE EXCLUDED.reason END,
+                -- A provably-undeliverable address coming back un-deletes itself.
+                deleted = CASE
+                    WHEN posthog_messagesuppression.source = 'MANUAL' THEN posthog_messagesuppression.deleted
+                    ELSE false END,
+                updated_at = NOW()
+        `
+
+        try {
+            await this.postgres.query(PostgresUse.COMMON_WRITE, query, params, 'recordHardBounces')
+            cdpEmailSuppressionTotal.inc({ result: 'hard_bounce' }, identifiers.length)
+            this.lazyLoader.clear()
+        } catch (error) {
+            logger.error('[EmailSuppression] Failed to record hard bounces', { teamId, error })
         }
     }
 

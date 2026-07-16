@@ -818,6 +818,7 @@ doesn't conflict with concurrent PRs.
 - primetric
 - productive
 - prompting_company
+- promptwatch
 - pulumi_cloud
 - qdrant
 - qonto

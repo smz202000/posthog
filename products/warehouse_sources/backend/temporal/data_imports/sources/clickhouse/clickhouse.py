@@ -119,6 +119,24 @@ def _is_transient_connect_drop(error_message: str) -> bool:
     return any(substring in error_message for substring in _TRANSIENT_CONNECT_DROP_SUBSTRINGS)
 
 
+# clickhouse-connect surfaces an HTTP 429 (Too Many Requests) from the server, or
+# from a proxy in front of it, as "HTTPDriver for <url> returned response code 429".
+# A 429 is a rate limit — the server is explicitly asking us to slow down and try
+# again later — so a fresh attempt after a pause recovers. We match only 429, not
+# other response codes: 404 is deterministic (see get_non_retryable_errors) and
+# 5xx stay retryable at the Temporal level. Matching the stable status phrase keeps
+# the volatile per-request URL out of the comparison.
+_RATE_LIMITED_SUBSTRING = "returned response code 429"
+
+# Backoff base between local connect retries after a 429. Longer than the
+# connect-drop retry (which just re-dials) to give the rate limit room to clear.
+_RATE_LIMIT_BACKOFF_BASE_SECONDS = 2
+
+
+def _is_rate_limited(error_message: str) -> bool:
+    return _RATE_LIMITED_SUBSTRING in error_message
+
+
 def _get_client(
     *,
     host: str,
@@ -171,6 +189,17 @@ def _get_client(
                     exc_info=e,
                 )
                 time.sleep(attempt)
+                continue
+            if attempt < _MAX_CONNECT_ATTEMPTS and _is_rate_limited(message):
+                wait = _RATE_LIMIT_BACKOFF_BASE_SECONDS * (2 ** (attempt - 1))
+                structlog.get_logger().warning(
+                    "ClickHouse rate limited (429) during connect; backing off",
+                    attempt=attempt,
+                    max_attempts=_MAX_CONNECT_ATTEMPTS,
+                    wait_seconds=wait,
+                    exc_info=e,
+                )
+                time.sleep(wait)
                 continue
             raise ClickHouseConnectionError(message) from e
 

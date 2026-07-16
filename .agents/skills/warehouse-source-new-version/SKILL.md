@@ -60,3 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Intercom: the only version signal is the `Intercom-Version` request header, held in a module constant with no dispatch. Adding a version = thread the resolved version from `source_for_pipeline` → `intercom_source` → the header on all request paths (REST config headers + scroll/substream sessions), no per-field mapping needed. `SimpleSource` (no `has_managed_hogql_schema`) means no canonical column hints to gate — response-shape breaks are absorbed by per-sync auto-inference. Left `validate_credentials` (pre-pin, no row) on the legacy constant so the `/me` probe is unchanged; parameterize the header-dispatch test over `Source.supported_versions` so future adds are auto-covered.

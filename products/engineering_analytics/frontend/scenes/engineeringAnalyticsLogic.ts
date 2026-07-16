@@ -626,8 +626,6 @@ export const engineeringAnalyticsLogic: LogicWrapper<engineeringAnalyticsLogicTy
             setThrashOnly: (thrash: boolean) => ({ thrash }),
             applyCardFilter: (card: CardFilter) => ({ card }),
             setSourceId: (sourceId: string | null) => ({ sourceId }),
-            // Scope repo of a multi-repo source (distinct from the client-side PR `setRepo` filter above).
-            setScopeRepo: (scopeRepo: string | null) => ({ scopeRepo }),
             // The picker selects a (source, repo) pair in one action, so both land before a single refresh.
             setScope: (sourceId: string | null, scopeRepo: string | null) => ({ sourceId, scopeRepo }),
             resetFilters: true,
@@ -906,14 +904,7 @@ export const engineeringAnalyticsLogic: LogicWrapper<engineeringAnalyticsLogicTy
             ],
             // Repo scope of a multi-repo source. Cleared when the source changes on its own (the old repo
             // belongs to the old source); the picker uses setScope to set both together.
-            scopeRepo: [
-                null as string | null,
-                {
-                    setScopeRepo: (_, { scopeRepo }) => scopeRepo,
-                    setScope: (_, { scopeRepo }) => scopeRepo,
-                    setSourceId: () => null,
-                },
-            ],
+            scopeRepo: [null as string | null, { setScope: (_, { scopeRepo }) => scopeRepo, setSourceId: () => null }],
             cardsStatus: [
                 'ok' as LoaderStatus,
                 {
@@ -1233,7 +1224,6 @@ export const engineeringAnalyticsLogic: LogicWrapper<engineeringAnalyticsLogicTy
             },
             setFlakyTestWindow: () => actions.loadFlakyTests(),
             setSourceId: () => actions.refresh(),
-            setScopeRepo: () => actions.refresh(),
             setScope: () => actions.refresh(),
             [engineeringAnalyticsFiltersLogic.actionTypes.setDateRange]: () => {
                 actions.loadWorkflowHealth()
@@ -1307,7 +1297,6 @@ export const engineeringAnalyticsLogic: LogicWrapper<engineeringAnalyticsLogicTy
             }
             return {
                 setSourceId: ({ sourceId }) => writeScope(sourceId, null),
-                setScopeRepo: ({ scopeRepo }) => writeScope(router.values.searchParams.source ?? null, scopeRepo),
                 setScope: ({ sourceId, scopeRepo }) => writeScope(sourceId, scopeRepo),
             }
         }),

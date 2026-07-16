@@ -60,3 +60,6 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- MailerLite: header-versioned API (`X-Version: YYYY-MM-DD`, absent → "latest"). When a source has no dispatch yet, map opaque framework labels to header values in a `settings.API_VERSION_HEADERS` dict — legacy label → `None` (send no header, keeps existing syncs byte-for-byte) and the new label → the pinned date. Thread the resolved version from `source_for_pipeline` through the request fn into a `_get_headers(api_key, api_version=<legacy>)` helper (default the param to the legacy label so credential-validation and other callers stay unversioned).
+- Header/date-versioned vendors publish a canonical pin value in their docs/SDK (MailerLite: `2038-01-19`) — use that exact value rather than inventing a date.
+- Assert the byte-for-byte invariant directly: a test that the legacy version (and the request fn's default) send no version header is the cheapest guard that existing syncs are untouched.

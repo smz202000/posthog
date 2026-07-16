@@ -14,8 +14,8 @@ import {
 } from 'products/alerts/frontend/components/AlertsTable'
 import { alertIntervalDisplayLabel } from 'products/alerts/frontend/logic/alertIntervalHelpers'
 
-import { AlertType } from '../types'
-import { AlertStateIndicator } from './ManageAlertsModal'
+import { AlertType } from '../../types'
+import { AlertStateIndicator } from '../ManageAlertsModal'
 
 interface InsightAlertsTableProps {
     alerts: AlertType[]

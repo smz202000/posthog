@@ -15,7 +15,7 @@ import { alertLogic } from '../logic/alertLogic'
 import { alertsLogic } from '../logic/alertsLogic'
 import { AlertType } from '../types'
 import { EditAlertModal } from './EditAlertModal'
-import { InsightAlertsTable } from './InsightAlertsTable'
+import { InsightAlertsTable } from './insights/InsightAlertsTable'
 
 const HedgehogMagnifyingGlass = pngHoggie(magnifyingGlassPng)
 

@@ -20,22 +20,26 @@ type AlertTableRecord = Record<string, any> & {
 
 export type AlertsTableGenericColumn = 'name' | 'lastChecked' | 'lastNotified' | 'createdBy' | 'enabled'
 export type AlertsTableColumn<T extends AlertTableRecord> = LemonTableColumn<T, keyof T | undefined>
-type AlertsTableColumnAdditions<T extends AlertTableRecord> = Partial<
-    Record<AlertsTableGenericColumn, { before?: AlertsTableColumn<T>[]; after?: AlertsTableColumn<T>[] }>
->
-
-const genericColumns: AlertsTableGenericColumn[] = ['name', 'lastChecked', 'lastNotified', 'createdBy', 'enabled']
+export interface AlertsTableColumns<T extends AlertTableRecord> {
+    actions?: AlertsTableColumn<T>[]
+    context?: AlertsTableColumn<T>[]
+    createdBy?: AlertsTableColumn<T>
+    details?: AlertsTableColumn<T>[]
+    enabled?: AlertsTableColumn<T>
+    leading?: AlertsTableColumn<T>[]
+    schedule?: AlertsTableColumn<T>[]
+    showLastNotified?: boolean
+    status?: AlertsTableColumn<T>
+}
 
 export interface AlertsTableProps<T extends AlertTableRecord> extends Omit<
     LemonTableProps<T>,
     'columns' | 'dataSource' | 'emptyState' | 'noSortingCancellation' | 'nouns' | 'rowKey'
 > {
     alerts: T[]
-    columnAdditions?: AlertsTableColumnAdditions<T>
+    columns: AlertsTableColumns<T>
     emptyState?: ReactNode
-    genericColumnOverrides?: Partial<Record<AlertsTableGenericColumn, LemonTableColumn<T, keyof T | undefined>>>
     getAlertUrl?: (alert: T) => string
-    hiddenGenericColumns?: AlertsTableGenericColumn[]
     isFiltering?: boolean
 }
 
@@ -119,11 +123,9 @@ function genericColumn<T extends AlertTableRecord>(
 
 export function AlertsTable<T extends AlertTableRecord>({
     alerts,
-    columnAdditions,
+    columns,
     emptyState,
-    genericColumnOverrides,
     getAlertUrl,
-    hiddenGenericColumns = [],
     isFiltering = false,
     loadingSkeletonRows = 5,
     ...tableProps
@@ -133,15 +135,22 @@ export function AlertsTable<T extends AlertTableRecord>({
         resolvedEmptyState = <div className="py-8 text-center text-secondary">No alerts match your filters</div>
     }
 
-    const resolvedColumns = genericColumns.flatMap((column) => {
-        if (hiddenGenericColumns.includes(column)) {
-            return []
-        }
-
-        const additions = columnAdditions?.[column]
-        const resolvedColumn = genericColumnOverrides?.[column] || genericColumn(column, getAlertUrl)
-        return [...(additions?.before || []), resolvedColumn, ...(additions?.after || [])]
-    })
+    const statusColumns = columns.status ? [columns.status] : []
+    const lastNotifiedColumns =
+        columns.showLastNotified === false ? [] : [genericColumn<T>('lastNotified', getAlertUrl)]
+    const resolvedColumns = [
+        ...(columns.leading || []),
+        genericColumn<T>('name', getAlertUrl),
+        ...statusColumns,
+        ...(columns.details || []),
+        genericColumn<T>('lastChecked', getAlertUrl),
+        ...lastNotifiedColumns,
+        ...(columns.schedule || []),
+        columns.createdBy || genericColumn<T>('createdBy', getAlertUrl),
+        ...(columns.context || []),
+        columns.enabled || genericColumn<T>('enabled', getAlertUrl),
+        ...(columns.actions || []),
+    ]
 
     return (
         <LemonTable

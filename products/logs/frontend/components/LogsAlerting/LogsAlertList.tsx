@@ -13,7 +13,7 @@ import IconMicrosoftTeams from 'public/services/microsoft-teams.png'
 import IconSlack from 'public/services/slack.png'
 import IconWebhook from 'public/services/webhook.svg'
 
-import { AlertsTable, AlertsTableColumn } from 'products/alerts/frontend/components/AlertsTable'
+import { AlertsTable, AlertsTableColumns } from 'products/alerts/frontend/components/AlertsTable'
 import {
     NotificationDestinationTypeEnumApi,
     LogsAlertConfigurationApi,
@@ -67,8 +67,9 @@ export function LogsAlertList(): JSX.Element {
         createAlertAndOpen,
     } = useActions(logsAlertingLogic)
 
-    const columnsAfterName: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
-        {
+    const columns: AlertsTableColumns<LogsAlertConfigurationApi> = {
+        showLastNotified: false,
+        status: {
             title: 'Status',
             dataIndex: 'state',
             render: (_, alert) => (
@@ -81,160 +82,165 @@ export function LogsAlertList(): JSX.Element {
                 />
             ),
         },
-        {
-            title: 'Threshold',
-            render: (_, alert) => <span className="text-muted text-xs">{formatThreshold(alert)}</span>,
-        },
-    ]
-    const columnsAfterLastChecked: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
-        {
-            title: (
-                <Tooltip title="When this alert is next scheduled to be evaluated. Alerts of the same cadence are spread across the cadence period to smooth load on the database.">
-                    <span className="cursor-help">Next check</span>
-                </Tooltip>
-            ),
-            dataIndex: 'next_check_at',
-            render: (_, alert) =>
-                alert.next_check_at ? (
-                    <TZLabel time={alert.next_check_at} />
-                ) : (
-                    <span className="text-muted text-xs">Pending</span>
+        details: [
+            {
+                title: 'Threshold',
+                render: (_, alert) => <span className="text-muted text-xs">{formatThreshold(alert)}</span>,
+            },
+        ],
+        schedule: [
+            {
+                title: (
+                    <Tooltip title="When this alert is next scheduled to be evaluated. Alerts of the same cadence are spread across the cadence period to smooth load on the database.">
+                        <span className="cursor-help">Next check</span>
+                    </Tooltip>
                 ),
-        },
-        {
-            title: (
-                <Tooltip title="Alert state over the last 24 hours. Green = OK, red = firing, orange = resolving/errored, grey = snoozed or disabled. Hover to see the state at a point in time.">
-                    <span className="cursor-help">Last 24h</span>
-                </Tooltip>
-            ),
-            render: (_, alert) => <LogsAlertStateTimeline timeline={alert.state_timeline} className="h-6 w-72" />,
-        },
-        {
-            title: 'Notifications',
-            dataIndex: 'destination_types',
-            render: (_, alert) => {
-                const types = alert.destination_types ?? []
-                const notifUrl = urls.logsAlertDetail(alert.id, 'notifications')
-                if (types.length === 0) {
+                dataIndex: 'next_check_at',
+                render: (_, alert) =>
+                    alert.next_check_at ? (
+                        <TZLabel time={alert.next_check_at} />
+                    ) : (
+                        <span className="text-muted text-xs">Pending</span>
+                    ),
+            },
+            {
+                title: (
+                    <Tooltip title="Alert state over the last 24 hours. Green = OK, red = firing, orange = resolving/errored, grey = snoozed or disabled. Hover to see the state at a point in time.">
+                        <span className="cursor-help">Last 24h</span>
+                    </Tooltip>
+                ),
+                render: (_, alert) => <LogsAlertStateTimeline timeline={alert.state_timeline} className="h-6 w-72" />,
+            },
+            {
+                title: 'Notifications',
+                dataIndex: 'destination_types',
+                render: (_, alert) => {
+                    const types = alert.destination_types ?? []
+                    const notifUrl = urls.logsAlertDetail(alert.id, 'notifications')
+                    if (types.length === 0) {
+                        return (
+                            <div className="flex items-center gap-1">
+                                <LemonTag type="warning">None</LemonTag>
+                                <LemonButton
+                                    size="small"
+                                    type="tertiary"
+                                    icon={
+                                        <span className="relative inline-flex text-danger">
+                                            <IconBell />
+                                            <span
+                                                aria-hidden
+                                                className="absolute inset-0 flex items-center justify-center"
+                                            >
+                                                <span className="block h-px w-[140%] rotate-45 bg-danger" />
+                                            </span>
+                                        </span>
+                                    }
+                                    to={notifUrl}
+                                    tooltip="No notification destinations configured — click to configure"
+                                />
+                            </div>
+                        )
+                    }
                     return (
                         <div className="flex items-center gap-1">
-                            <LemonTag type="warning">None</LemonTag>
+                            <LogsAlertDestinationTags types={types} />
                             <LemonButton
                                 size="small"
                                 type="tertiary"
-                                icon={
-                                    <span className="relative inline-flex text-danger">
-                                        <IconBell />
-                                        <span aria-hidden className="absolute inset-0 flex items-center justify-center">
-                                            <span className="block h-px w-[140%] rotate-45 bg-danger" />
-                                        </span>
-                                    </span>
-                                }
+                                icon={<IconBell />}
                                 to={notifUrl}
-                                tooltip="No notification destinations configured — click to configure"
+                                tooltip="Configure notifications"
                             />
                         </div>
                     )
-                }
-                return (
-                    <div className="flex items-center gap-1">
-                        <LogsAlertDestinationTags types={types} />
-                        <LemonButton
-                            size="small"
-                            type="tertiary"
-                            icon={<IconBell />}
-                            to={notifUrl}
-                            tooltip="Configure notifications"
-                        />
-                    </div>
-                )
+                },
             },
-        },
-    ]
-    const enabledColumn: AlertsTableColumn<LogsAlertConfigurationApi> = {
-        title: 'Enabled',
-        dataIndex: 'enabled',
-        render: (_, alert) => (
-            <LemonSwitch
-                checked={alert.enabled ?? true}
-                onChange={() => toggleAlertEnabled(alert)}
-                disabledReason={
-                    alert.state === LogsAlertConfigurationStateEnumApi.Broken
-                        ? 'Reset this alert to re-enable checks'
-                        : undefined
-                }
-                data-attr="logs-alert-row-toggle"
-            />
-        ),
-    }
-    const columnsAfterEnabled: AlertsTableColumn<LogsAlertConfigurationApi>[] = [
-        {
-            title: '',
+        ],
+        enabled: {
+            title: 'Enabled',
+            dataIndex: 'enabled',
             render: (_, alert) => (
-                <More
-                    overlay={
-                        <LemonMenuOverlay
-                            items={[
-                                {
-                                    label: 'Edit',
-                                    onClick: () => setEditingAlert(alert),
-                                },
-                                {
-                                    label: 'View history',
-                                    onClick: () => setViewingHistoryAlert(alert),
-                                },
-                                alert.state === LogsAlertConfigurationStateEnumApi.Snoozed
-                                    ? {
-                                          label: 'Unsnooze',
-                                          onClick: () => unsnoozeAlert(alert.id),
-                                      }
-                                    : {
-                                          label: 'Snooze',
-                                          items: SNOOZE_DURATIONS.map((d) => ({
-                                              label: d.label,
-                                              onClick: () => snoozeAlert(alert.id, d.minutes),
-                                          })),
-                                      },
-                                ...(alert.state === LogsAlertConfigurationStateEnumApi.Broken
-                                    ? [
-                                          {
-                                              label: resettingAlertIds.has(alert.id) ? 'Resetting…' : 'Reset alert',
-                                              onClick: () => resetAlert(alert.id),
-                                              disabledReason: resettingAlertIds.has(alert.id)
-                                                  ? 'Reset in progress'
-                                                  : undefined,
-                                          },
-                                      ]
-                                    : []),
-                                {
-                                    'data-attr': 'logs-alert-row-delete',
-                                    label: 'Delete',
-                                    status: 'danger',
-                                    onClick: () => {
-                                        LemonDialog.open({
-                                            title: `Delete "${alert.name}"?`,
-                                            description:
-                                                'This alert will be permanently deleted. This action cannot be undone.',
-                                            primaryButton: {
-                                                children: 'Delete',
-                                                type: 'primary',
-                                                status: 'danger',
-                                                onClick: () => deleteAlert(alert.id),
-                                                'data-attr': 'logs-alert-delete-confirm',
-                                            },
-                                            secondaryButton: {
-                                                children: 'Cancel',
-                                            },
-                                        })
-                                    },
-                                },
-                            ]}
-                        />
+                <LemonSwitch
+                    checked={alert.enabled ?? true}
+                    onChange={() => toggleAlertEnabled(alert)}
+                    disabledReason={
+                        alert.state === LogsAlertConfigurationStateEnumApi.Broken
+                            ? 'Reset this alert to re-enable checks'
+                            : undefined
                     }
+                    data-attr="logs-alert-row-toggle"
                 />
             ),
         },
-    ]
+        actions: [
+            {
+                title: '',
+                render: (_, alert) => (
+                    <More
+                        overlay={
+                            <LemonMenuOverlay
+                                items={[
+                                    {
+                                        label: 'Edit',
+                                        onClick: () => setEditingAlert(alert),
+                                    },
+                                    {
+                                        label: 'View history',
+                                        onClick: () => setViewingHistoryAlert(alert),
+                                    },
+                                    alert.state === LogsAlertConfigurationStateEnumApi.Snoozed
+                                        ? {
+                                              label: 'Unsnooze',
+                                              onClick: () => unsnoozeAlert(alert.id),
+                                          }
+                                        : {
+                                              label: 'Snooze',
+                                              items: SNOOZE_DURATIONS.map((d) => ({
+                                                  label: d.label,
+                                                  onClick: () => snoozeAlert(alert.id, d.minutes),
+                                              })),
+                                          },
+                                    ...(alert.state === LogsAlertConfigurationStateEnumApi.Broken
+                                        ? [
+                                              {
+                                                  label: resettingAlertIds.has(alert.id) ? 'Resetting…' : 'Reset alert',
+                                                  onClick: () => resetAlert(alert.id),
+                                                  disabledReason: resettingAlertIds.has(alert.id)
+                                                      ? 'Reset in progress'
+                                                      : undefined,
+                                              },
+                                          ]
+                                        : []),
+                                    {
+                                        'data-attr': 'logs-alert-row-delete',
+                                        label: 'Delete',
+                                        status: 'danger',
+                                        onClick: () => {
+                                            LemonDialog.open({
+                                                title: `Delete "${alert.name}"?`,
+                                                description:
+                                                    'This alert will be permanently deleted. This action cannot be undone.',
+                                                primaryButton: {
+                                                    children: 'Delete',
+                                                    type: 'primary',
+                                                    status: 'danger',
+                                                    onClick: () => deleteAlert(alert.id),
+                                                    'data-attr': 'logs-alert-delete-confirm',
+                                                },
+                                                secondaryButton: {
+                                                    children: 'Cancel',
+                                                },
+                                            })
+                                        },
+                                    },
+                                ]}
+                            />
+                        }
+                    />
+                ),
+            },
+        ],
+    }
 
     if (alertsLoading && alerts.length === 0) {
         return <SpinnerOverlay />
@@ -255,14 +261,8 @@ export function LogsAlertList(): JSX.Element {
             </div>
             <AlertsTable
                 alerts={alerts}
-                columnAdditions={{
-                    name: { after: columnsAfterName },
-                    lastChecked: { after: columnsAfterLastChecked },
-                    enabled: { after: columnsAfterEnabled },
-                }}
-                genericColumnOverrides={{ enabled: enabledColumn }}
+                columns={columns}
                 getAlertUrl={(alert) => urls.logsAlertDetail(alert.id)}
-                hiddenGenericColumns={['lastNotified']}
                 loading={alertsLoading}
                 emptyState="No alerts configured yet."
                 size="small"

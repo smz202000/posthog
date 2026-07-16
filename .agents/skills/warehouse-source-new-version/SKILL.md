@@ -60,3 +60,4 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- Kustomer: vendor version label (`v1`/`v2`) IS the URL path segment — store endpoint configs as version-relative `resource` names and build `/{api_version}/{resource}` so a v1 pin stays byte-for-byte identical. Watch out: the "v2" API-reference toggle still documents the core list resources under `/v1/` paths, so response shapes were treated as version-compatible (no per-version field mapping). Left `validate_credentials` on the legacy `/v1/` probe — it runs pre-pin at creation and is version-agnostic.

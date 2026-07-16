@@ -60,3 +60,8 @@ After you finish a version-update or deprecation PR using this skill, **append w
 ### Learnings
 
 - (seed) Stripe: response shapes differ enough across date versions that canonical column hints must be gated per version; newer versions auto-infer schema instead.
+- ShipStation: a source with no version declaration inherits the base `("v1",)`/`"v1"` defaults — a version add here means introducing `supported_versions`/`default_version` from scratch, not editing an existing tuple.
+- Thread the version as a single `api_version: str` param through the transport (`source_for_pipeline` → `*_source` → `get_rows`) and give the internal helpers a `default=<current version>`; existing call sites/tests stay byte-for-byte identical and only the source layer passes the resolved value.
+- A frozen "dialect" dataclass keyed by version (base URL, auth scheme, pagination-param spelling, date format, probe path) keeps per-version transport differences in one table instead of scattering `if version == ...` branches; fall the lookup back to the oldest version for an undeclared pin.
+- ShipStation v1→v2 is a host+auth+pagination+date-format swap (ssapi/basic-auth/Pacific → api.shipstation.com/v2/API-Key-header/ISO-8601-UTC), but `get_schemas` and `SourceConfig.fields` are version-blind, so per-version schema/credential-field divergence can't be expressed today — scope a version add to the request path.
+- `validate_credentials` has no pin; probe `resolve_api_version(None)` (the default) so creation-time validation hits the same host the first sync will.

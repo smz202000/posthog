@@ -145,6 +145,7 @@ the row lists both.
 | coupa                            | HTTP                        | requests                                                        | ✅                          |
 | coveralls                        | HTTP                        | requests                                                        | ✅                          |
 | crates_io                        | HTTP                        | requests                                                        | ✅                          |
+| cronitor                         | HTTP                        | requests                                                        | ✅                          |
 | crunchbase                       | HTTP                        | requests                                                        | ✅                          |
 | culture_amp                      | HTTP                        | requests                                                        | ✅                          |
 | cursor                           | HTTP                        | requests                                                        | ✅                          |
@@ -248,6 +249,7 @@ the row lists both.
 | hyperspell                       | HTTP                        | requests                                                        | ✅                          |
 | imagga                           | HTTP                        | requests                                                        | ✅                          |
 | incident_io                      | HTTP                        | requests                                                        | ✅                          |
+| infisical                        | HTTP                        | requests                                                        | ✅                          |
 | inflowinventory                  | HTTP                        | requests                                                        | ✅                          |
 | inngest                          | HTTP                        | requests                                                        | ✅                          |
 | insightly                        | HTTP                        | requests                                                        | ✅                          |
@@ -621,7 +623,6 @@ doesn't conflict with concurrent PRs.
 - cosmosdb
 - couchbase
 - criteo
-- cronitor
 - curve
 - dagster_cloud
 - databricks
@@ -715,7 +716,6 @@ doesn't conflict with concurrent PRs.
 - ikas
 - illumina_basespace
 - impact
-- infisical
 - infor_nexus
 - insightful
 - instagram

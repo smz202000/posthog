@@ -130,6 +130,9 @@ CUSTOMER_IO_TEMPLATE_ID_MAP = {
     "personal_api_key_exposed": "45",
     "code_based_verification": "75",
     "project_secret_api_key_exposed": "49",
+    # TODO: create a dedicated Customer.io template for the rolled email and swap the ID;
+    # reuses the exposed-key template until then so notifications deliver instead of erroring
+    "project_secret_api_key_rolled": "49",
     "oauth_token_exposed": "50",
     "passkey_added": "51",
     "passkey_removed": "52",
